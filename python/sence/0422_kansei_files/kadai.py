@@ -103,7 +103,7 @@ print("\nkadai4")
 if __name__ == "__main__":
     
     #データのカテゴリー(教科)
-    categoly = ["Japanese", "English", "Math", "Sciencs"]
+    categoly = ["Japanese", "English", "Math", "Science"]
     
     #データの取得
     data = loadCSV("data03_p132.csv",True,True)
@@ -183,6 +183,7 @@ if __name__ == "__main__":
         for j in range(0,cat_len):
             r[i,j] = pow(w[i],0.5) * v[j,i]
 
+    print("因子負荷量\n",r)
     for i in range(0,cat_len):
         plt.scatter(r[0,i], r[1,i], s= 50, label = categoly[i])
     
@@ -203,7 +204,9 @@ if __name__ == "__main__":
     data = loadCSV("data04_nagoya1_new.csv",True,True)
     
     #データのインデックス(区名)を取得
-    index = loadCSV_txt("data04_nagoya1_index.csv",True,True)
+    #index = loadCSV_txt("data04_nagoya1_index.csv",True,True)
+    #文字化けしたため手打ち
+    index = ["Chikusa", "Higashi", "Kita", "Nishi", "Nakamura", "Naka", "Showa", "Mizuho", "Atsuta", "Nakagawa", "Minato", "Minami", "Moriyama", "Midori","Meito", "Tenpaku" ]
     
     #データのカテゴリー
     categoly = ["All", "~15", "16~64", "65~", "Foreiner", "in Daytime" ]
@@ -271,10 +274,10 @@ if __name__ == "__main__":
             y[i] += SD[j,i] * v[j,1]
             
     for i in range(0,data_len):
-        plt.scatter(x[i],y[i], label = index[i] )
+        plt.scatter(x[i],y[i], s = (i+1)*20, label = index[i] )
     
     plt.grid()
-    plt.xlim(-5,6)
+    plt.xlim(-5,8)
     plt.legend()
     plt.xlabel("first")
     plt.ylabel("second")
