@@ -63,12 +63,16 @@ if __name__ == "__main__":
     '''
 
     #練習２
-    S = [0., 0, 0]
-    for i in range(0,3):
-        S[i] = SS(d, [i,3,4]) - SS(d, [3,4])
+    S = np.zeros((5,5))
+    dim = 5
+    for i in range(dim):
+        for j in range(i):    
+            S[i,j] = SS(d, [i,j])
     print(S)
     
-
+    S_min = 0.;
+    
+    np.amin(S, out =S_min)
 
 
 
