@@ -1,0 +1,5 @@
+Akai 166 62.9
+Kuroda 155 50.1
+Aoyama 170 72.0
+Tsuji 175 83.9
+Washio 175 72.5s

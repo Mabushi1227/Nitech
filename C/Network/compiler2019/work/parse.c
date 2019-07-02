@@ -7,6 +7,8 @@ extern TOKEN tok;
 extern FILE *infile;
 extern FILE *outfile;
 
+#define REGISTERAVAIABLE 4
+
 typedef struct 
 {
 	int addr;
@@ -20,15 +22,23 @@ int OffsetFlag = 0; //offsetを継続して使うときに1,0のときはoffset�
 int label = 0; //ラベル数
 int looping = 0;
 
+typedef struct {
+	int ident; //記録している変数のアドレスを保存
+	int used; //使われた順番を記録
+} Register;
+Register reg[REGISTERAVAIABLE];
+
 void error(char *s);
 void outblock(void);
 void statement(void);
-void expression(int offset);
-void condition(int offset, int order);  //order 0->if, 1->while
+void expression();
+void condition(int order);  //order 0->if, 1->while
  
 int getxaddr();
 int getlabel(int plus);  //使用ラベルの管理,前半ラベル->plus=0,後半ラベルplus=1 
 void compare();
+void reginit();
+int regsearch();
 
 void compiler(void){
 	init_getsym();
@@ -46,6 +56,7 @@ void compiler(void){
 			if (tok.attr == SYMBOL && tok.value == SEMICOLON){
 
 				//getsym();
+				reginit();
 				outblock();
 
 				if (tok.attr == SYMBOL && tok.value == PERIOD){
@@ -75,7 +86,6 @@ void outblock(void){
 				strcpy(s_table[count].v, tok.charvalue);
 				//デバッグ用
 				//fprintf(outfile,"%s\n",s_table[count].v);
-
 				count++;
 			}
 			getsym();
@@ -91,12 +101,12 @@ void outblock(void){
 
 void statement(void){
 	int r;
-	 
+	 /* 
 	if(OffsetFlag){
 		offset++;
 	}else{
 		offset = 0;
-	} 
+	} */
 
 	getsym();
 
@@ -108,8 +118,10 @@ void statement(void){
 		getsym();
 		if(tok.value == BECOMES){
 			getsym();
-			expression(offset);
-			fprintf(outfile,"loadr	r%d,r%d\n",r,count+offset);
+			expression(regchoice(1));
+			fprintf(outfile,"store	r%d,%d\n",regchoice(1),r);
+			reg[regchoice(1)].ident = r; 
+			//fprintf(outfile,"loadr	r%d,r%d\n",r,offset); テスト
 			//fprintf(outfile,"%d\n",tok.value);
 		}else if(tok.value == PERIOD){
 			fprintf(outfile,"halt\n");
@@ -171,9 +183,15 @@ void statement(void){
 			getsym();
 			if(tok.attr == IDENTIFIER){
 				//書き出し処理
-				fprintf(outfile,"writed	r%d\n",getxaddr());
-				fprintf(outfile,"loadi r%d,'\\n'\n",count+offset);
-				fprintf(outfile,"writec r%d\n",count+offset);
+				int regnum = regsearch();
+				if(regnum != -1){
+					fprintf(outfile,"writed	r%d\n",regnum);
+				}else{
+					fprintf(outfile,"load	r%d,%d\n",offset,getxaddr());
+					fprintf(outfile,"writed	r%d\n",offset);
+				}
+				fprintf(outfile,"loadi r%d,'\\n'\n",offset);
+				fprintf(outfile,"writec r%d\n",offset);
 				getsym();
 			}else{
 				fprintf(outfile,"error: NOT IDENTIFIER\n");
@@ -185,13 +203,13 @@ void statement(void){
 	}
 }
 
-//数式(r[count+offset]に出力する)
-void expression(int offset){
-
+//数式(reg[].used == 0に出力する)
+void expression(){
+	r = regchoice(0)
 	if(tok.attr == NUMBER){
-		fprintf(outfile,"loadi	r%d,%d\n",count+offset,tok.value);
+		fprintf(outfile,"loadi	r%d,%d\n",r,tok.value);
 	}else if(tok.attr == IDENTIFIER){
-		fprintf(outfile,"loadr	r%d,r%d\n",count+offset,getxaddr());
+		fprintf(outfile,"load	r%d,%d\n",r,getxaddr());
 	}else{
 		printf("error IN EXPRESSION");
 	}
@@ -206,36 +224,40 @@ void expression(int offset){
 		case PLUS:
 				getsym();
 				if(tok.attr == NUMBER){
-					fprintf(outfile,"addi	r%d,%d\n",count+offset,tok.value);
+					fprintf(outfile,"addi	r%d,%d\n",offset,tok.value);
 				}else if(tok.attr == IDENTIFIER){
-					fprintf(outfile,"addr	r%d,r%d\n",count+offset,getxaddr());
+					fprintf(outfile,"add	r%d,%d\n",offset,getxaddr());
+					//fprintf(outfile,"addr	r%d,r%d\n",offset,getxaddr());
 				}
 				getsym();
 				break;
 		case MINUS:
 				getsym();
 				if(tok.attr == NUMBER){
-					fprintf(outfile,"subi	r%d,%d\n",count+offset,tok.value);
+					fprintf(outfile,"subi	r%d,%d\n",offset,tok.value);
 				}else if(tok.attr == IDENTIFIER){
-					fprintf(outfile,"subr	r%d,r%d\n",count+offset,getxaddr());
+					fprintf(outfile,"sub	r%d,%d\n",offset,getxaddr());
+					//fprintf(outfile,"subr	r%d,r%d\n",offset,getxaddr());
 				}
 				getsym();
 				break;
 		case TIMES:
 				getsym();
 				if(tok.attr == NUMBER){
-					fprintf(outfile,"muli	r%d,%d\n",count+offset,tok.value);
+					fprintf(outfile,"muli	r%d,%d\n",offset,tok.value);
 				}else if(tok.attr == IDENTIFIER){
-					fprintf(outfile,"mulr	r%d,r%d\n",count+offset,getxaddr());
+					fprintf(outfile,"mul	r%d,%d\n",offset,getxaddr());
+					//fprintf(outfile,"mulr	r%d,r%d\n",offset,getxaddr());
 				}
 				getsym();
 				break;
 		case DIV:
 				getsym();
 				if(tok.attr == NUMBER){
-				fprintf(outfile,"divi	r%d,%d\n",count+offset,tok.value);
+					fprintf(outfile,"divi	r%d,%d\n",offset,tok.value);
 				}else if(tok.attr == IDENTIFIER){
-					fprintf(outfile,"divr	r%d,r%d\n",count+offset,getxaddr());
+					fprintf(outfile,"div	r%d,%d\n",offset,getxaddr());
+					//fprintf(outfile,"divr	r%d,r%d\n",offset,getxaddr());
 				}
 				getsym();
 				break;
@@ -251,20 +273,31 @@ int getxaddr(){
 	int i;
 	for(i = 0; i < count; i++){
 		if(strcmp(s_table[i].v,tok.charvalue) == 0){
+				xaddr = s_table[i].addr;
+		}
+	}
+	return xaddr;
+}
+
+int getraddr(){
+	int xaddr = -1;  //見つからなかったら-1が返される
+	int i;
+	for(i = 0; i < count; i++){
+		if(strcmp(s_table[i].v,tok.charvalue) == 0){
 				xaddr = i;
-		}	
+		}
 	}
 	return xaddr;
 }
 
 void compare(){
 	getsym();
-	expression(offset+1);
-	fprintf(outfile,"cmpr	r%d,r%d\n",count+offset,count+offset+1);
+	expression(regchoice(1));
+	fprintf(outfile,"cmpr	r%d,r%d\n",offset,regchoice(1));
 }
 
 //order ifなら0,whileなら1 
-void condition(int offset,int order){
+void condition(int order){
 	printf("xxx%d,%d\n",tok.value,tok.attr);
 	switch (tok.value){
 			case EQL:
@@ -273,7 +306,7 @@ void condition(int offset,int order){
 				if(tok.value == THEN){
 					statement();
 				}else if(tok.value == DO){
-					statement();
+					statement()
 				}else{
 					fprintf(outfile,"%d,error: NOT THEN or DO\n",tok.value);
 				}
@@ -436,4 +469,45 @@ void condition(int offset,int order){
 int getlabel(int plus){
 	printf("%d,%d,%d,%d\n",label, label/2, looping,label - ( label / 2 - looping ) * 2 - 2 + plus);
 	return label - ( label / 2 - looping ) * 2 - 2 + plus; 
+}
+
+
+void reginit(){
+	int i;
+	for (i = 0; i < REGISTERAVAIABLE; i++)
+	{
+		reg[i].ident = -1;
+		reg[i].used = i;
+	}
+}
+
+int regsearch(){
+	int r = -1;
+	int i;
+	for (i = 0; i < REGISTERAVAIABLE; i++)
+	{
+		if(reg[i].ident == i){
+			r = i;
+		}
+	}
+	return r;
+}
+
+int regchoice(int num){
+	int choice;
+	int i,j;
+	for (i = 0; i < REGISTERAVAIABLE; i++)
+	{
+		if(reg[i].used == num){
+			choice = i;
+			reg[i].used = REGISTERAVAIABLE - 1;
+			for (j = 0; j < REGISTERAVAIABLE; j++)
+			{
+				if(j != i){
+					reg[i].used--;
+				}
+			}
+		}
+	}
+	return choice;
 }
