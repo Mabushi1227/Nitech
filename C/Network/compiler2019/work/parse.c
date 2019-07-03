@@ -31,14 +31,16 @@ Register reg[REGISTERAVAIABLE];
 void error(char *s);
 void outblock(void);
 void statement(void);
-void expression();
-void condition(int order);  //order 0->if, 1->while
+void expression(int r); //結果をレジスタ[r]に入れる
+void condition(int r1,int r2,int order);  //結果をレジスタ[r]に入れる, order 0->if, 1->while
  
 int getxaddr();
 int getlabel(int plus);  //使用ラベルの管理,前半ラベル->plus=0,後半ラベルplus=1 
-void compare();
+void compare(int r1,int r2);
 void reginit();
 int regsearch();
+void regctrl(int number);
+int regchoice();
 
 void compiler(void){
 	init_getsym();
@@ -57,6 +59,8 @@ void compiler(void){
 
 				//getsym();
 				reginit();
+				
+				
 				outblock();
 
 				if (tok.attr == SYMBOL && tok.value == PERIOD){
@@ -100,27 +104,30 @@ void outblock(void){
 }
 
 void statement(void){
-	int r;
-	 /* 
-	if(OffsetFlag){
-		offset++;
-	}else{
-		offset = 0;
-	} */
-
+	//int r;
+	
 	getsym();
 
 	printf("%d\n",tok.value);
 
 	if(tok.attr == IDENTIFIER){
 		//代入先のアドレス
-		r = getxaddr();
+		int xaddr = getxaddr();
 		getsym();
 		if(tok.value == BECOMES){
 			getsym();
-			expression(regchoice(1));
-			fprintf(outfile,"store	r%d,%d\n",regchoice(1),r);
-			reg[regchoice(1)].ident = r; 
+			int raddr = regchoice();
+			regctrl(raddr);
+
+				int i;
+				for(i = 0; i < 4; i++)
+				{
+					printf("%d\n",reg[i].used);
+				}
+
+			expression(raddr);
+			fprintf(outfile,"store	r%d,%d\n",raddr,xaddr);
+			reg[raddr].ident = xaddr; 
 			//fprintf(outfile,"loadr	r%d,r%d\n",r,offset); テスト
 			//fprintf(outfile,"%d\n",tok.value);
 		}else if(tok.value == PERIOD){
@@ -146,8 +153,12 @@ void statement(void){
 		}
 	}else if(tok.value == IF){
 		getsym();
-		expression(offset);
-		condition(offset,0);
+		int rnumber1 = regchoice();
+		regctrl(rnumber1);
+		int rnumber2 = regchoice();
+		regctrl(rnumber2);
+		expression(rnumber1);
+		condition(rnumber1,rnumber2,0);
 		//printf("xxx%d",tok.value);
 		if(tok.value == ELSE){
 			statement();
@@ -167,9 +178,13 @@ void statement(void){
 		label += 2;
 		fprintf(outfile,"L%d:\n",getlabel(0));
 		getsym();
-		expression(offset);
+		int rnumber1 = regchoice();
+		regctrl(rnumber1);
+		int rnumber2 = regchoice();
+		regctrl(rnumber2);
+		expression(rnumber1);
 		//printf("xx%d",tok.value);
-		condition(offset,1);
+		condition(rnumber1,rnumber2,1);
 
 		looping--;
 		/* if(){
@@ -186,12 +201,17 @@ void statement(void){
 				int regnum = regsearch();
 				if(regnum != -1){
 					fprintf(outfile,"writed	r%d\n",regnum);
+					regctrl(regnum);
 				}else{
-					fprintf(outfile,"load	r%d,%d\n",offset,getxaddr());
-					fprintf(outfile,"writed	r%d\n",offset);
+					regnum = regchoice();
+					regctrl(regnum);
+					fprintf(outfile,"load	r%d,%d\n",regnum,getxaddr());
+					fprintf(outfile,"writed	r%d\n",regnum);
 				}
-				fprintf(outfile,"loadi r%d,'\\n'\n",offset);
-				fprintf(outfile,"writec r%d\n",offset);
+				regnum = regchoice();
+				regctrl(regnum);
+				fprintf(outfile,"loadi r%d,'\\n'\n",regnum);
+				fprintf(outfile,"writec r%d\n",regnum);
 				getsym();
 			}else{
 				fprintf(outfile,"error: NOT IDENTIFIER\n");
@@ -203,13 +223,20 @@ void statement(void){
 	}
 }
 
-//数式(reg[].used == 0に出力する)
-void expression(){
-	r = regchoice(0)
+//数式(結果をレジスタ[r]に出力する)
+void expression(int r){
 	if(tok.attr == NUMBER){
 		fprintf(outfile,"loadi	r%d,%d\n",r,tok.value);
 	}else if(tok.attr == IDENTIFIER){
-		fprintf(outfile,"load	r%d,%d\n",r,getxaddr());
+		/*int find = regsearch();
+		if(find != -1 && r != find){
+			r = find;
+			regctrl(r);
+		}else if(find != -1 && r == find){
+			
+		}else{*/
+			fprintf(outfile,"load	r%d,%d\n",r,getxaddr());
+		//}
 	}else{
 		printf("error IN EXPRESSION");
 	}
@@ -224,39 +251,39 @@ void expression(){
 		case PLUS:
 				getsym();
 				if(tok.attr == NUMBER){
-					fprintf(outfile,"addi	r%d,%d\n",offset,tok.value);
+					fprintf(outfile,"addi	r%d,%d\n",r,tok.value);
 				}else if(tok.attr == IDENTIFIER){
-					fprintf(outfile,"add	r%d,%d\n",offset,getxaddr());
-					//fprintf(outfile,"addr	r%d,r%d\n",offset,getxaddr());
+					fprintf(outfile,"add	r%d,%d\n",r,getxaddr());
+					//fprintf(outfile,"addr	r%d,r%d\n",r,getxaddr());
 				}
 				getsym();
 				break;
 		case MINUS:
 				getsym();
 				if(tok.attr == NUMBER){
-					fprintf(outfile,"subi	r%d,%d\n",offset,tok.value);
+					fprintf(outfile,"subi	r%d,%d\n",r,tok.value);
 				}else if(tok.attr == IDENTIFIER){
-					fprintf(outfile,"sub	r%d,%d\n",offset,getxaddr());
-					//fprintf(outfile,"subr	r%d,r%d\n",offset,getxaddr());
+					fprintf(outfile,"sub	r%d,%d\n",r,getxaddr());
+					//fprintf(outfile,"subr	r%d,r%d\n",r,getxaddr());
 				}
 				getsym();
 				break;
 		case TIMES:
 				getsym();
 				if(tok.attr == NUMBER){
-					fprintf(outfile,"muli	r%d,%d\n",offset,tok.value);
+				fprintf(outfile,"muli	r%d,%d\n",r,tok.value);
 				}else if(tok.attr == IDENTIFIER){
-					fprintf(outfile,"mul	r%d,%d\n",offset,getxaddr());
-					//fprintf(outfile,"mulr	r%d,r%d\n",offset,getxaddr());
+					fprintf(outfile,"mul	r%d,%d\n",r,getxaddr());
+					//fprintf(outfile,"mulr	r%d,r%d\n",r,getxaddr());
 				}
 				getsym();
 				break;
 		case DIV:
 				getsym();
 				if(tok.attr == NUMBER){
-					fprintf(outfile,"divi	r%d,%d\n",offset,tok.value);
+					fprintf(outfile,"divi	r%d,%d\n",r,tok.value);
 				}else if(tok.attr == IDENTIFIER){
-					fprintf(outfile,"div	r%d,%d\n",offset,getxaddr());
+					fprintf(outfile,"div	r%d,%d\n",r,getxaddr());
 					//fprintf(outfile,"divr	r%d,r%d\n",offset,getxaddr());
 				}
 				getsym();
@@ -279,34 +306,23 @@ int getxaddr(){
 	return xaddr;
 }
 
-int getraddr(){
-	int xaddr = -1;  //見つからなかったら-1が返される
-	int i;
-	for(i = 0; i < count; i++){
-		if(strcmp(s_table[i].v,tok.charvalue) == 0){
-				xaddr = i;
-		}
-	}
-	return xaddr;
-}
-
-void compare(){
+void compare(int r1,int r2){
 	getsym();
-	expression(regchoice(1));
-	fprintf(outfile,"cmpr	r%d,r%d\n",offset,regchoice(1));
+	expression(r2);
+	fprintf(outfile,"cmpr	r%d,r%d\n",r1,r2);
 }
 
 //order ifなら0,whileなら1 
-void condition(int order){
+void condition(int r1, int r2, int order){
 	printf("xxx%d,%d\n",tok.value,tok.attr);
 	switch (tok.value){
 			case EQL:
-				compare();
+				compare(r1,r2);
 				fprintf(outfile,"jnz	L%d\n",label+order);
 				if(tok.value == THEN){
 					statement();
 				}else if(tok.value == DO){
-					statement()
+					statement();
 				}else{
 					fprintf(outfile,"%d,error: NOT THEN or DO\n",tok.value);
 				}
@@ -320,7 +336,7 @@ void condition(int order){
 				}
 				break;
 			case NOTEQL:
-				compare();
+				compare(r1,r2);
 				fprintf(outfile,"jz	L%d\n",label+order);
 				if(tok.value == THEN){
 					statement();
@@ -341,7 +357,7 @@ void condition(int order){
 				break;
 
 			case LESSTHAN:
-				compare();
+				compare(r1,r2);
 				fprintf(outfile,"jge	L%d\n",getlabel(0)+order);
 				if(tok.value == THEN){
 					statement();
@@ -381,7 +397,7 @@ void condition(int order){
 				break;
 				*/
 			case GRTRTHAN:
-				compare();
+				compare(r1,r2);
 				fprintf(outfile,"jle	L%d\n",label+order);
 				if(tok.value == THEN){
 					statement();
@@ -401,7 +417,7 @@ void condition(int order){
 				break;
 
 			case LESSEQL:
-				compare();
+				compare(r1,r2);
 				fprintf(outfile,"jgt	L%d\n",getlabel(0)+order);
 				if(tok.value == THEN){
 					statement();
@@ -441,7 +457,7 @@ void condition(int order){
 				break;
 			*/
 			case GRTREQL:
-				compare();
+				compare(r1,r2);
 				fprintf(outfile,"jlt	L%d\n",label+order);
 				if(tok.value == THEN){
 					statement();
@@ -471,7 +487,7 @@ int getlabel(int plus){
 	return label - ( label / 2 - looping ) * 2 - 2 + plus; 
 }
 
-
+//レジスタ変数の初期化
 void reginit(){
 	int i;
 	for (i = 0; i < REGISTERAVAIABLE; i++)
@@ -481,8 +497,9 @@ void reginit(){
 	}
 }
 
+//レジスタに使用する変数が格納されているかを探索
 int regsearch(){
-	int r = -1;
+	int r = -1; //見つからなければ-1
 	int i;
 	for (i = 0; i < REGISTERAVAIABLE; i++)
 	{
@@ -493,21 +510,28 @@ int regsearch(){
 	return r;
 }
 
-int regchoice(int num){
-	int choice;
-	int i,j;
+//reg[].usedが0のレジスタ番号を返す
+int regchoice(){
+	int choice = -1;
+	int i;
 	for (i = 0; i < REGISTERAVAIABLE; i++)
 	{
-		if(reg[i].used == num){
+		if(reg[i].used == 0){
 			choice = i;
-			reg[i].used = REGISTERAVAIABLE - 1;
-			for (j = 0; j < REGISTERAVAIABLE; j++)
-			{
-				if(j != i){
-					reg[i].used--;
-				}
-			}
 		}
 	}
 	return choice;
+}
+
+//numberのレジスタを使用した時の後処理
+//expression,condition内では行わない
+void regctrl(int number){
+	int j;
+	for (j = 0; j < REGISTERAVAIABLE; j++) //新しく使用するレジスタ以降を１つずつずらす
+	{
+		if(reg[j].used > reg[number].used){
+			reg[j].used -= 1;
+		}	
+	}
+	reg[number].used = REGISTERAVAIABLE - 1; //新しく使用するレジスタのusedを末尾に移動
 }
