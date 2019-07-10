@@ -98,8 +98,8 @@ def drawScatter3D(x,y,z,xlabel,ylabel,zlabel,lx,ly,lz):
 if __name__ == "__main__":
     print("lecture 6")
     
-    fn = "data6-1_p061(UTF8)"
-    #fn = "data6-2_p086(UTF8)"
+    #fn = "data6-1_p061(UTF8)"
+    fn = "data6-2_p086(UTF8)"
     
     data = loadCSV(fn + ".csv",True,True)
 
@@ -111,6 +111,7 @@ if __name__ == "__main__":
     print("x\n",x)
     print("y\n",y)
     
+    n = data.shape[0] 
     p = 2
     X = np.ones([x.shape[0],x.shape[1]+1])
     
@@ -150,7 +151,7 @@ if __name__ == "__main__":
     #print("ly\n",ly)
         
     #dataのプロットと，平面を描画
-    drawScatter3D(x[:,0],x[:,1],y[:],"x1","x2","y",lx1,lx2,ly)
+    #drawScatter3D(x[:,0],x[:,1],y[:],"x1","x2","y",lx1,lx2,ly)
     
     ##寄与率の計算
     y_predict = Beta[0] + Beta[1]*x[:,0] + Beta[2]*x[:,1]
@@ -158,14 +159,25 @@ if __name__ == "__main__":
     #残差
     e_i = y - y_predict
     #残差平方和
-    Se_1 = sum(e_i ** 2)
+    Se = sum(e_i ** 2)
     Sr = np.dot(x[:,0]-x_mean[0], e_i)*Beta[0] + np.dot(x[:,1]-x_mean[1], e_i)*Beta[1]
     
     ##Sr = sum(Sr)
     Syy = sum( (y - y_m) **2 )
     
-    R2 = 1 - Se_1 / Syy
+    R2 = 1 - Se / Syy
     Se_2 = Syy - Sr 
      
-    print("Se\n",Se_1,Se_2,"\nSr(回帰による平方和)\n",Sr,
+    print("Se\n",Se,"\nSr(回帰による平方和)\n",Sr,
                       "\nSyy\n",Syy,"\nR2（寄与率）\n",R2)
+    
+for i in range(0,2):
+    print(i+1, "のみのモデル\n")
+    y_model = Beta[0] + Beta[i+1]*x[:,i]
+    print("y model",i+1,"= \n",y_model)
+    ei = y - y_model
+    ei_avr = np.mean(ei)
+    SE = np.sum(np.dot(ei-ei_avr,ei-ei_avr))
+    print("SE",SE)
+    F0 = (Syy - SE) / (SE / (n-2))
+    print("F0=" , F0)

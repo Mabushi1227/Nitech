@@ -31,7 +31,7 @@ Register reg[REGISTERAVAIABLE];
 void error(char *s);
 void outblock(void);
 void statement(void);
-void expression(int r); //結果をレジスタ[r]に入れる
+void expression(int r); //結果をレジスタ[r]に入れる,
 void condition(int r1,int r2,int order);  //結果をレジスタ[r]に入れる, order 0->if, 1->while
  
 int getxaddr();
@@ -121,7 +121,18 @@ void statement(void){
 
 			expression(raddr);
 			fprintf(outfile,"store	r%d,%d\n",raddr,xaddr);
-			reg[raddr].ident = xaddr; 
+
+			//レジスタの値を更新
+			int i;
+			for (i = 0; i < REGISTERAVAIABLE; i++)
+			{
+				if(reg[i].ident == xaddr){
+					fprintf(outfile,"loadr	r%d,r%d\n",raddr,i);
+				}
+			}
+			
+			reg[raddr].ident = xaddr;
+
 			//fprintf(outfile,"loadr	r%d,r%d\n",r,offset); テスト
 			//fprintf(outfile,"%d\n",tok.value);
 		}else if(tok.value == PERIOD){
@@ -153,7 +164,6 @@ void statement(void){
 		regctrl(rnumber2);
 		expression(rnumber1);
 		condition(rnumber1,rnumber2,0);
-		//printf("xxx%d",tok.value);
 		if(tok.value == ELSE){
 			statement();
 			fprintf(outfile,"L%d:\n",label+1);
@@ -180,12 +190,13 @@ void statement(void){
 		//printf("xx%d",tok.value);
 		condition(rnumber1,rnumber2,1);
 
+		/*if(--looping == 0){
+			looping = label / 2;
+		}*/
 		looping--;
 		/* if(){
 			OffsetFlag = 0;
 		}*/
-
-		//statement();
 
 	}else if(tok.value == WRITE){ //write命令
 		do {
@@ -223,15 +234,16 @@ void expression(int r){
 	if(tok.attr == NUMBER){
 		fprintf(outfile,"loadi	r%d,%d\n",r,tok.value);
 	}else if(tok.attr == IDENTIFIER){
-		/*int find = regsearch();
+		int find = regsearch();
 		if(find != -1 && r != find){
+			fprintf(outfile,"loadr	r%d,r%d\n",r,find);
 			r = find;
 			regctrl(r);
 		}else if(find != -1 && r == find){
 			
-		}else{*/
+		}else{
 			fprintf(outfile,"load	r%d,%d\n",r,getxaddr());
-		//}
+		}
 	}else{
 		printf("error IN EXPRESSION");
 	}
@@ -248,7 +260,15 @@ void expression(int r){
 				if(tok.attr == NUMBER){
 					fprintf(outfile,"addi	r%d,%d\n",r,tok.value);
 				}else if(tok.attr == IDENTIFIER){
-					fprintf(outfile,"add	r%d,%d\n",r,getxaddr());
+					/* int r2 = regsearch();
+					if(r2 != -1 && r != r2){
+						fprintf(outfile,"loadr	r%d,r%d\n",r2,);
+						r = find;
+						regctrl(r);
+					}else{
+						*/
+						fprintf(outfile,"add	r%d,%d\n",r,getxaddr());
+					//}
 					//fprintf(outfile,"addr	r%d,r%d\n",r,getxaddr());
 				}
 				getsym();
@@ -286,6 +306,7 @@ void expression(int r){
 		default: 
 				//fprintf(outfile,"error\n"); 
 				break;
+	
 	}
 }
 
@@ -309,11 +330,10 @@ void compare(int r1,int r2){
 
 //order ifなら0,whileなら1 
 void condition(int r1, int r2, int order){
-	printf("xxx%d,%d\n",tok.value,tok.attr);
 	switch (tok.value){
 			case EQL:
 				compare(r1,r2);
-				fprintf(outfile,"jnz	L%d\n",label+order);
+				fprintf(outfile,"jnz	L%d\n",getlabel(0)+order);
 				if(tok.value == THEN){
 					statement();
 				}else if(tok.value == DO){
@@ -323,16 +343,16 @@ void condition(int r1, int r2, int order){
 				}
 				if(order){
 					//while
-					fprintf(outfile,"jmp	L%d\n",label);
-					fprintf(outfile,"L%d:\n",label+1);
+					fprintf(outfile,"jmp	L%d\n",getlabel(0));
+					fprintf(outfile,"L%d:\n",getlabel(1));
 				}else{
-					fprintf(outfile,"jmp	L%d\n",label+1);
-					fprintf(outfile,"L%d:\n",label);
+					fprintf(outfile,"jmp	L%d\n",getlabel(1));
+					fprintf(outfile,"L%d:\n",getlabel(0));
 				}
 				break;
 			case NOTEQL:
 				compare(r1,r2);
-				fprintf(outfile,"jz	L%d\n",label+order);
+				fprintf(outfile,"jz	L%d\n",getlabel(0)+order);
 				if(tok.value == THEN){
 					statement();
 				}else if(tok.value == DO){
@@ -342,15 +362,14 @@ void condition(int r1, int r2, int order){
 				}
 				if(order){
 					//while
-					fprintf(outfile,"jmp	L%d\n",label);
-					fprintf(outfile,"L%d:\n",label+1);
+					fprintf(outfile,"jmp	L%d\n",getlabel(0));
+					fprintf(outfile,"L%d:\n",getlabel(1));
 				}else{
-					//if
-					fprintf(outfile,"jmp	L%d\n",label+1);
-					fprintf(outfile,"L%d:\n",label);
+					fprintf(outfile,"jmp	L%d\n",getlabel(1));
+					fprintf(outfile,"L%d:\n",getlabel(0));
 				}
 				break;
-
+				
 			case LESSTHAN:
 				compare(r1,r2);
 				fprintf(outfile,"jge	L%d\n",getlabel(0)+order);
@@ -451,9 +470,10 @@ void condition(int r1, int r2, int order){
 				}
 				break;
 			*/
-			case GRTREQL:
+		
+				case GRTREQL:
 				compare(r1,r2);
-				fprintf(outfile,"jlt	L%d\n",label+order);
+				fprintf(outfile,"jlt	L%d\n",getlabel(0)+order);
 				if(tok.value == THEN){
 					statement();
 				}else if(tok.value == DO){
@@ -463,11 +483,11 @@ void condition(int r1, int r2, int order){
 				}
 				if(order){
 					//while
-					fprintf(outfile,"jmp	L%d\n",label);
-					fprintf(outfile,"L%d:\n",label+1);
+					fprintf(outfile,"jmp	L%d\n",getlabel(0));
+					fprintf(outfile,"L%d:\n",getlabel(1));
 				}else{
-					fprintf(outfile,"jmp	L%d\n",label+1);
-					fprintf(outfile,"L%d:\n",label);
+					fprintf(outfile,"jmp	L%d\n",getlabel(1));
+					fprintf(outfile,"L%d:\n",getlabel(0));
 				}
 				break;
 			default:
