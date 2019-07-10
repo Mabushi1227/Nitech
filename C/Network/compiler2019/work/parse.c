@@ -17,10 +17,11 @@ typedef struct
 
 s_entry s_table[32];
 int count = 0;  //変数の数を保存
-int offset; //使用レジスタの制御
-int OffsetFlag = 0; //offsetを継続して使うときに1,0のときはoffsetを1にしておく
+//int offset; //使用レジスタの制御
+//int OffsetFlag = 0; //offsetを継続して使うときに1,0のときはoffsetを1にしておく
 int label = 0; //ラベル数
-int looping = 0;
+int looping = 0; //ループの数
+int using = 0; //計算式の中で使用しているレジスタ数、4を越えると格納
 
 typedef struct {
 	int ident; //記録している変数のアドレスを保存
@@ -32,6 +33,8 @@ void error(char *s);
 void outblock(void);
 void statement(void);
 void expression(int r); //結果をレジスタ[r]に入れる
+void term(int r); //計算式の解析
+void factor(int r); //計算式の解析
 void condition(int r1,int r2,int order);  //結果をレジスタ[r]に入れる, order 0->if, 1->while
  
 int getxaddr();
@@ -218,75 +221,102 @@ void statement(void){
 	}
 }
 
-//数式(結果をレジスタ[r]に出力する)
+//計算式を解析する関数
+//expression() -> term() -> factor()
+//最終的な出力はrに対応するレジスタ
+///expression()は、数式の初めのトークンが読み込まれた状態で呼び出される
 void expression(int r){
-	if(tok.attr == NUMBER){
-		fprintf(outfile,"loadi	r%d,%d\n",r,tok.value);
-	}else if(tok.attr == IDENTIFIER){
-		/*int find = regsearch();
-		if(find != -1 && r != find){
-			r = find;
-			regctrl(r);
-		}else if(find != -1 && r == find){
-			
-		}else{*/
-			fprintf(outfile,"load	r%d,%d\n",r,getxaddr());
-		//}
-	}else{
-		printf("error IN EXPRESSION");
+	
+	do{
+		int eMemory = 0; //掛け算なら1、割り算なら2を記憶
+		if(tok.value == PlUS){
+			eMemory = 1;
+			getsym(); //term
+		}else if(tok.value == MINUS){
+			eMemory = 2;
+			getsym(); //term
+		}
+
+		
+		if(using != 0){
+
+		}
+		term();
+
+		
+
+		if(eMemory == 1){
+			fprintf(outfile,"addr	r%d,r%d\n",r,tok.value);
+		}else if(eMemory == 2){
+			fprintf(outfile,"subr	r%d,r%d\n",r,tok.value);
+		}
+
+	}while(tok.value == PLUS || tok.value == MINUS);
+	
+}
+
+void term(int r)){
+	do{
+		int tMemory = 0; //掛け算なら1、割り算なら2を記憶
+		if(tok.value == TIMES){
+			tMemory = 1;
+			getsym(); // ident,number,(
+		}else if(tok.value == DIV){
+			tMemory = 2;
+			getsym();
+		}
+		factor();
+
+		if(tMemory == 1){
+			fprintf(outfile,"mulr	r%d,r%d\n",r,tok.value);
+		}else if(tMemory == 2){
+			fprintf(outfile,"divr	r%d,r%d\n",r,tok.value);
+		}
+	}while(tok.value == TIMES || tok.value == DIV);
+	
+}
+
+
+void factor(int r){
+	getsym(); // -, ident,number,(
+	int fMemory = 0; //マイナスがあるか無いかを記憶
+	if(tok.value == MINUS){
+		tfMemory = 1;
+		getsym(); // ident,number,(
 	}
 
-	getsym();
-	//分岐
-	//各演算で分岐
-	switch(tok.value){
-		case SEMICOLON:
-				//getsym();
-				break;
-		case PLUS:
-				getsym();
-				if(tok.attr == NUMBER){
-					fprintf(outfile,"addi	r%d,%d\n",r,tok.value);
-				}else if(tok.attr == IDENTIFIER){
-					fprintf(outfile,"add	r%d,%d\n",r,getxaddr());
-					//fprintf(outfile,"addr	r%d,r%d\n",r,getxaddr());
-				}
-				getsym();
-				break;
-		case MINUS:
-				getsym();
-				if(tok.attr == NUMBER){
-					fprintf(outfile,"subi	r%d,%d\n",r,tok.value);
-				}else if(tok.attr == IDENTIFIER){
-					fprintf(outfile,"sub	r%d,%d\n",r,getxaddr());
-					//fprintf(outfile,"subr	r%d,r%d\n",r,getxaddr());
-				}
-				getsym();
-				break;
-		case TIMES:
-				getsym();
-				if(tok.attr == NUMBER){
-				fprintf(outfile,"muli	r%d,%d\n",r,tok.value);
-				}else if(tok.attr == IDENTIFIER){
-					fprintf(outfile,"mul	r%d,%d\n",r,getxaddr());
-					//fprintf(outfile,"mulr	r%d,r%d\n",r,getxaddr());
-				}
-				getsym();
-				break;
-		case DIV:
-				getsym();
-				if(tok.attr == NUMBER){
-					fprintf(outfile,"divi	r%d,%d\n",r,tok.value);
-				}else if(tok.attr == IDENTIFIER){
-					fprintf(outfile,"div	r%d,%d\n",r,getxaddr());
-					//fprintf(outfile,"divr	r%d,r%d\n",offset,getxaddr());
-				}
-				getsym();
-				break;
-		default: 
-				//fprintf(outfile,"error\n"); 
-				break;
+	if(tok.attr == IDENTIFIER){
+		fprintf(outfile,"load	r%d,%d\n",r,getxaddr());
+	}else if(tok.atter == NUMBER){
+		loadi();
+	}else if(tok.value == LPAREN){
+		expression();
+		if(tok.value == RPAREN){
+			getsym();
+		}
+	}else{
+		printf("ERROR IN FACTOR");
 	}
+
+	if(fMemory){
+		fprintf(outfile,"muli	r%d,-1\n",r);
+	}
+
+}
+
+int loadi(int r){
+	if(tok.value =< 32767 && tok.value => -32768){
+		fprintf(outfile,"loadi	r%d,%d\n",r,tok.value);	
+	}else{
+		label += 2;
+		fprintf(outfile,"L%d:\n",getlabel(0));
+		fprintf(outfile,"load	r%d,%d\n",r,getlabel(1));
+		fprintf(outfile,"L%d:\n",getlabel(1));
+		fprintf(outfile,"%d",tok.value);
+
+		looping--;
+	}
+	
 }
 
 //変数(アドレス)の取得
@@ -492,6 +522,7 @@ void reginit(){
 	}
 }
 
+///レジスタの選択は実行する１つ上の階層で行う
 //レジスタに使用する変数が格納されているかを探索
 int regsearch(){
 	int r = -1; //見つからなければ-1
@@ -541,3 +572,67 @@ void regctrl(int number){
 	reg[number].ident = - 1; //使用するレジスタの初期化
 	reg[number].used = REGISTERAVAIABLE - 1; //新しく使用するレジスタのusedを末尾に移動
 }
+
+/*前回までのexpression
+//数式(結果をレジスタ[r]に出力する)
+void expression(int r){
+	if(tok.attr == NUMBER){
+		fprintf(outfile,"loadi	r%d,%d\n",r,tok.value);
+	}else if(tok.attr == IDENTIFIER){
+		fprintf(outfile,"load	r%d,%d\n",r,getxaddr());
+	}else{
+		printf("error IN EXPRESSION");
+	}
+
+	getsym();
+	//分岐
+	//各演算で分岐
+	switch(tok.value){
+		case SEMICOLON:
+				//getsym();
+				break;
+		case PLUS:
+				getsym();
+				if(tok.attr == NUMBER){
+					fprintf(outfile,"addi	r%d,%d\n",r,tok.value);
+				}else if(tok.attr == IDENTIFIER){
+					fprintf(outfile,"add	r%d,%d\n",r,getxaddr());
+					//fprintf(outfile,"addr	r%d,r%d\n",r,getxaddr());
+				}
+				getsym();
+				break;
+		case MINUS:
+				getsym();
+				if(tok.attr == NUMBER){
+					fprintf(outfile,"subi	r%d,%d\n",r,tok.value);
+				}else if(tok.attr == IDENTIFIER){
+					fprintf(outfile,"sub	r%d,%d\n",r,getxaddr());
+					//fprintf(outfile,"subr	r%d,r%d\n",r,getxaddr());
+				}
+				getsym();
+				break;
+		case TIMES:
+				getsym();
+				if(tok.attr == NUMBER){
+				fprintf(outfile,"muli	r%d,%d\n",r,tok.value);
+				}else if(tok.attr == IDENTIFIER){
+					fprintf(outfile,"mul	r%d,%d\n",r,getxaddr());
+					//fprintf(outfile,"mulr	r%d,r%d\n",r,getxaddr());
+				}
+				getsym();
+				break;
+		case DIV:
+				getsym();
+				if(tok.attr == NUMBER){
+					fprintf(outfile,"divi	r%d,%d\n",r,tok.value);
+				}else if(tok.attr == IDENTIFIER){
+					fprintf(outfile,"div	r%d,%d\n",r,getxaddr());
+					//fprintf(outfile,"divr	r%d,r%d\n",offset,getxaddr());
+				}
+				getsym();
+				break;
+		default: 
+				//fprintf(outfile,"error\n"); 
+				break;
+	}
+}*/
