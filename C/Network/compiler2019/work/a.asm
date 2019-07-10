@@ -15,8 +15,7 @@ addi	r1,1
 store	r1,0
 jmp	L0
 L1:
-load	r2,1
-writed	r2
-loadi r3,'\n'
-writec r3
+writed	r0
+loadi r2,'\n'
+writec r2
 halt
