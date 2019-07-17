@@ -20,7 +20,7 @@ int count = 0;  //変数の数を保存
 //int offset; //使用レジスタの制御
 //int OffsetFlag = 0; //offsetを継続して使うときに1,0のときはoffsetを1にしておく
 int label = 0; //ラベル数
-int looping = 0; //ループの数
+//int looping = 0; //ループの数
 //int using = 0; //計算式の中で使用しているレジスタ数、4を越えると格納
 
 typedef struct {
@@ -36,7 +36,7 @@ void statement(void);
 void expression(int r); //結果をレジスタ[r]に入れる
 void term(int r); //計算式の解析
 void factor(int r); //計算式の解析
-void condition(int r1,int r2,int order);  //結果をレジスタ[r]に入れる, order 0->if, 1->while
+void condition(int r1,int r2,int order,int labaling);  //結果をレジスタ[r]に入れる, order 0->if, 1->while
  
 int getxaddr();
 int getlabel(int plus);  //使用ラベルの管理,前半ラベル->plus=0,後半ラベルplus=1 
@@ -157,21 +157,23 @@ void statement(void){
 			fprintf(outfile,"error: NOT END\n"); 
 		}
 	}else if(tok.value == IF){
+		int labeling = label;
+		label += 2;
 		getsym();
 		int rnumber1 = regchoice();
 		regctrl(rnumber1);
 		int rnumber2 = regchoice();
 		regctrl(rnumber2);
 		expression(rnumber1);
-		condition(rnumber1,rnumber2,0);
+		condition(rnumber1,rnumber2,0,labeling);
 		//printf("xxx%d",tok.value);
 		if(tok.value == ELSE){
+			fprintf(outfile,"jmp	L%d\n",labeling+1);
+			fprintf(outfile,"L%d:\n",labeling);
 			statement();
-			fprintf(outfile,"L%d:\n",label+1);
-			label += 2;
+			fprintf(outfile,"L%d:\n",labeling+1);
 		}else if(tok.value == SEMICOLON){
-			fprintf(outfile,"L%d:\n",label+1);
-			label += 2;
+			fprintf(outfile,"L%d:\n",labeling);
 		}else if(tok.value == PERIOD){
 				fprintf(outfile,"halt\n");
 		}else{
@@ -179,9 +181,9 @@ void statement(void){
 		}
 
 	}else if(tok.value == WHILE){
-		looping++;
+		int labeling = label;
 		label += 2;
-		fprintf(outfile,"L%d:\n",getlabel(0));
+		fprintf(outfile,"L%d:\n",labeling);
 		getsym(); //IDENTFIER
 		//使用するレジスタを決める
 		int rnumber1 = regchoice();
@@ -192,15 +194,11 @@ void statement(void){
 		reg[rnumber1].disable = 1;
 		reg[rnumber2].disable = 1;
 		//printf("xx%d",tok.value);
-		condition(rnumber1,rnumber2,1);
+		condition(rnumber1,rnumber2,1,labeling);
 
 		reg[rnumber1].disable = 0;
 		reg[rnumber2].disable = 0;
 
-		looping--;
-		/* if(){
-			OffsetFlag = 0;
-		}*/
 
 		//statement();
 
@@ -255,7 +253,7 @@ void expression(int r){
 		regctrl(s);
 		reg[s].disable = 1;
 		getsym();
-		term(s);
+		expression(s);
 		if(eMemory == 1){
 			fprintf(outfile,"addr	r%d,r%d\n",r,s);
 			reg[s].disable = 0;
@@ -278,13 +276,12 @@ void term(int r){
 			tMemory = 1;
 		}else if(tok.value == DIV){
 			tMemory = 2;
-
 		}
 		s = regchoice();
 		regctrl(s);
 		reg[s].disable = 1;
 		getsym();
-		factor(s);
+		term(s);
 		if(tMemory == 1){
 			fprintf(outfile,"mulr	r%d,r%d\n",r,s);
 			reg[s].disable = 0;
@@ -297,12 +294,11 @@ void term(int r){
 
 
 void factor(int r){
-	//getsym(); // -, ident,number,(
 	int fMemory = 0; //マイナスがあるか無いかを記憶
-	if(tok.value == MINUS){
+	/*if(tok.value == MINUS){
 		fMemory = 1;
 		getsym(); // ident,number,(
-	}
+	}*/
 
 	if(tok.attr == IDENTIFIER){
 		fprintf(outfile,"load	r%d,%d\n",r,getxaddr());
@@ -311,12 +307,15 @@ void factor(int r){
 		loadi(r);
 		getsym();
 	}else if(tok.value == LPAREN){
+		getsym();
 		expression(r);
 		if(tok.value == RPAREN){
 			getsym();
 		}
 	}else{
-		printf("ERROR IN FACTOR");
+		printf("ERROR IN FACTOR: %d\n",tok.value);
+		//getsym();
+		//fprintf(outfile,"ERROR IN FACTOR; %d\n",tok.value);
 	}
 
 	if(fMemory){
@@ -330,12 +329,9 @@ void loadi(int r){
 		fprintf(outfile,"loadi	r%d,%d\n",r,tok.value);	
 	}else{
 		label += 2;
-		fprintf(outfile,"L%d:\n",getlabel(0));
-		fprintf(outfile,"load	r%d,%d\n",r,getlabel(1));
-		fprintf(outfile,"L%d:\n",getlabel(1));
-		fprintf(outfile,"%d",tok.value);
-
-		looping--;
+		fprintf(outfile,"L%d:\n",label);
+		fprintf(outfile,"load	r%d,L%d\n",r,label+1);
+		fprintf(outfile,"L%d: data %d\n",label+1,tok.value);
 	}
 	
 }
@@ -356,15 +352,17 @@ void compare(int r1,int r2){
 	getsym();
 	expression(r2);
 	fprintf(outfile,"cmpr	r%d,r%d\n",r1,r2);
+	reg[r1].disable = 0;
+	reg[r2].disable = 0;
 }
 
 //order ifなら0,whileなら1 
-void condition(int r1, int r2, int order){
+void condition(int r1, int r2, int order,int labeling){
 	printf("xxx%d,%d\n",tok.value,tok.attr);
 	switch (tok.value){
 			case EQL:
 				compare(r1,r2);
-				fprintf(outfile,"jnz	L%d\n",label+order);
+				fprintf(outfile,"jnz	L%d\n",labeling+order);
 				if(tok.value == THEN){
 					statement();
 				}else if(tok.value == DO){
@@ -374,16 +372,13 @@ void condition(int r1, int r2, int order){
 				}
 				if(order){
 					//while
-					fprintf(outfile,"jmp	L%d\n",label);
-					fprintf(outfile,"L%d:\n",label+1);
-				}else{
-					fprintf(outfile,"jmp	L%d\n",label+1);
-					fprintf(outfile,"L%d:\n",label);
+					fprintf(outfile,"jmp	L%d\n",labeling);
+					fprintf(outfile,"L%d:\n",labeling+1);
 				}
 				break;
 			case NOTEQL:
 				compare(r1,r2);
-				fprintf(outfile,"jz	L%d\n",label+order);
+				fprintf(outfile,"jz	L%d\n",labeling+order);
 				if(tok.value == THEN){
 					statement();
 				}else if(tok.value == DO){
@@ -393,18 +388,14 @@ void condition(int r1, int r2, int order){
 				}
 				if(order){
 					//while
-					fprintf(outfile,"jmp	L%d\n",label);
-					fprintf(outfile,"L%d:\n",label+1);
-				}else{
-					//if
-					fprintf(outfile,"jmp	L%d\n",label+1);
-					fprintf(outfile,"L%d:\n",label);
+					fprintf(outfile,"jmp	L%d\n",labeling);
+					fprintf(outfile,"L%d:\n",labeling+1);
 				}
 				break;
 
 			case LESSTHAN:
 				compare(r1,r2);
-				fprintf(outfile,"jge	L%d\n",getlabel(0)+order);
+				fprintf(outfile,"jge	L%d\n",labeling+order);
 				if(tok.value == THEN){
 					statement();
 				}else if(tok.value == DO){
@@ -414,16 +405,13 @@ void condition(int r1, int r2, int order){
 				}
 				if(order){
 					//while
-					fprintf(outfile,"jmp	L%d\n",getlabel(0));
-					fprintf(outfile,"L%d:\n",getlabel(1));
-				}else{
-					fprintf(outfile,"jmp	L%d\n",getlabel(1));
-					fprintf(outfile,"L%d:\n",getlabel(0));
+					fprintf(outfile,"jmp	L%d\n",labeling);
+					fprintf(outfile,"L%d:\n",labeling+1);
 				}
 				break;
 			case GRTRTHAN:
 				compare(r1,r2);
-				fprintf(outfile,"jle	L%d\n",label+order);
+				fprintf(outfile,"jle	L%d\n",labeling+order);
 				if(tok.value == THEN){
 					statement();
 				}else if(tok.value == DO){
@@ -433,17 +421,14 @@ void condition(int r1, int r2, int order){
 				}
 				if(order){
 					//while
-					fprintf(outfile,"jmp	L%d\n",label);
-					fprintf(outfile,"L%d:\n",label+1);
-				}else{
-					fprintf(outfile,"jmp	L%d\n",label+1);
-					fprintf(outfile,"L%d:\n",label);
+					fprintf(outfile,"jmp	L%d\n",labeling);
+					fprintf(outfile,"L%d:\n",labeling+1);
 				}
 				break;
 
 			case LESSEQL:
 				compare(r1,r2);
-				fprintf(outfile,"jgt	L%d\n",getlabel(0)+order);
+				fprintf(outfile,"jgt	L%d\n",labeling+order);
 				if(tok.value == THEN){
 					statement();
 				}else if(tok.value == DO){
@@ -453,16 +438,13 @@ void condition(int r1, int r2, int order){
 				}
 				if(order){
 					//while
-					fprintf(outfile,"jmp	L%d\n",getlabel(0));
-					fprintf(outfile,"L%d:\n",getlabel(1));
-				}else{
-					fprintf(outfile,"jmp	L%d\n",getlabel(1));
-					fprintf(outfile,"L%d:\n",getlabel(0));
+					fprintf(outfile,"jmp	L%d\n",labeling);
+					fprintf(outfile,"L%d:\n",labeling+1);
 				}
 				break;
 			case GRTREQL:
 				compare(r1,r2);
-				fprintf(outfile,"jlt	L%d\n",label+order);
+				fprintf(outfile,"jlt	L%d\n",labeling+order);
 				if(tok.value == THEN){
 					statement();
 				}else if(tok.value == DO){
@@ -472,11 +454,8 @@ void condition(int r1, int r2, int order){
 				}
 				if(order){
 					//while
-					fprintf(outfile,"jmp	L%d\n",label);
-					fprintf(outfile,"L%d:\n",label+1);
-				}else{
-					fprintf(outfile,"jmp	L%d\n",label+1);
-					fprintf(outfile,"L%d:\n",label);
+					fprintf(outfile,"jmp	L%d\n",labeling);
+					fprintf(outfile,"L%d:\n",labeling+1);
 				}
 				break;
 			default:
@@ -486,10 +465,10 @@ void condition(int r1, int r2, int order){
 }
 
 //使用するラベルの管理
-int getlabel(int plus){
+/*int getlabel(int plus){
 	//printf("%d,%d,%d,%d\n",label, label/2, looping,label - ( label / 2 - looping ) * 2 - 2 + plus);
 	return label - ( label / 2 - looping ) * 2 - 2 + plus; 
-}
+}*/
 
 //レジスタ変数の初期化
 void reginit(){
