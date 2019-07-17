@@ -170,14 +170,3 @@ if __name__ == "__main__":
      
     print("Se\n",Se,"\nSr(回帰による平方和)\n",Sr,
                       "\nSyy\n",Syy,"\nR2（寄与率）\n",R2)
-    
-for i in range(0,2):
-    print(i+1, "のみのモデル\n")
-    y_model = Beta[0] + Beta[i+1]*x[:,i]
-    print("y model",i+1,"= \n",y_model)
-    ei = y - y_model
-    ei_avr = np.mean(ei)
-    SE = np.sum(np.dot(ei-ei_avr,ei-ei_avr))
-    print("SE",SE)
-    F0 = (Syy - SE) / (SE / (n-2))
-    print("F0=" , F0)

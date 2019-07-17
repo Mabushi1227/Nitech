@@ -58,7 +58,7 @@ datalist = np.zeros((len(lines),len(labname)))
 for j in range(len(lines)):
     for i in range(len(labname)):
         if labname[i] in lines[j]:
-            datalist[j,i] = 1 
+            datalist[j,i] = 1
         else: 
             datalist[j,i] = 0
 
@@ -66,6 +66,9 @@ print("元データ\n",datalist)
 
 ##数量化３類の計算
 bnumber = np.sum(datalist, axis= 0)
+
+
+
 b = np.zeros((len(labname),len(labname)))
 for i in range(len(labname)):
     b[i,i] = bnumber[i]
@@ -76,14 +79,24 @@ c = np.zeros((len(lines),len(lines)))
 for i in range(len(lines)):
     c[i,i] = cnumber[i]
 
-datalist_t = datalist.T
-
 for i in range(0,len(labname)):
     if b[i,i] != 0:
         b[i,i] = pow(b[i,i],-0.5)
 
 for i in range(0,len(lines)):
     c[i,i] = pow(c[i,i],-1)
+    
+##０票ならソートした時最右に持っていく
+counter = 0;
+for i in range(len(labname)):
+    if bnumber[i] == 0:
+        datalist = np.delete(datalist,i-counter,1)
+        labname = np.delete(labname,i-counter)
+        b = np.delete(b,i-counter,0)
+        b = np.delete(b,i-counter,1)
+        counter += 1
+        
+datalist_t = datalist.T
 
 h = b @ datalist_t @ c @ datalist @ b
 
@@ -100,10 +113,7 @@ x = b @ v[:,1]
 y = c @ datalist @ x / r
 
 
-##０票ならソートした時最右に持っていく
-for i in range(len(labname)):
-    if bnumber[i] == 0:
-        x[i] = 1
+
 
 sortx_index = np.argsort(x,axis = 0)
 sort_data = datalist[:,sortx_index]
