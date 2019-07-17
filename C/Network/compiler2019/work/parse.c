@@ -21,11 +21,12 @@ int count = 0;  //変数の数を保存
 //int OffsetFlag = 0; //offsetを継続して使うときに1,0のときはoffsetを1にしておく
 int label = 0; //ラベル数
 int looping = 0; //ループの数
-int using = 0; //計算式の中で使用しているレジスタ数、4を越えると格納
+//int using = 0; //計算式の中で使用しているレジスタ数、4を越えると格納
 
 typedef struct {
 	int ident; //記録している変数のアドレスを保存
 	int used; //使われた順番を記録
+	int disable; //上書き可能なら０,不可能なら1
 } Register;
 Register reg[REGISTERAVAIABLE];
 
@@ -44,6 +45,8 @@ void reginit();
 int regsearch();
 void regctrl(int number);
 int regchoice();
+void loadi(int r);
+int over_i[];
 
 void compiler(void){
 	init_getsym();
@@ -124,7 +127,12 @@ void statement(void){
 
 			expression(raddr);
 			fprintf(outfile,"store	r%d,%d\n",raddr,xaddr);
-			reg[raddr].ident = xaddr; 
+			reg[raddr].ident = xaddr;
+			reg[raddr].disable = 0;
+			//using = 0;
+
+			printf("%d\n",tok.value);
+
 			//fprintf(outfile,"loadr	r%d,r%d\n",r,offset); テスト
 			//fprintf(outfile,"%d\n",tok.value);
 		}else if(tok.value == PERIOD){
@@ -174,14 +182,20 @@ void statement(void){
 		looping++;
 		label += 2;
 		fprintf(outfile,"L%d:\n",getlabel(0));
-		getsym();
+		getsym(); //IDENTFIER
+		//使用するレジスタを決める
 		int rnumber1 = regchoice();
 		regctrl(rnumber1);
 		int rnumber2 = regchoice();
 		regctrl(rnumber2);
 		expression(rnumber1);
+		reg[rnumber1].disable = 1;
+		reg[rnumber2].disable = 1;
 		//printf("xx%d",tok.value);
 		condition(rnumber1,rnumber2,1);
+
+		reg[rnumber1].disable = 0;
+		reg[rnumber2].disable = 0;
 
 		looping--;
 		/* if(){
@@ -226,71 +240,78 @@ void statement(void){
 //最終的な出力はrに対応するレジスタ
 ///expression()は、数式の初めのトークンが読み込まれた状態で呼び出される
 void expression(int r){
-	
-	do{
+
+	term(r);
+
+	int s;
+	if(tok.value == PLUS || tok.value == MINUS){
 		int eMemory = 0; //掛け算なら1、割り算なら2を記憶
-		if(tok.value == PlUS){
+		if(tok.value == PLUS){
 			eMemory = 1;
-			getsym(); //term
 		}else if(tok.value == MINUS){
 			eMemory = 2;
-			getsym(); //term
 		}
-
-		
-		if(using != 0){
-
-		}
-		term();
-
-		
-
+		s = regchoice();
+		regctrl(s);
+		reg[s].disable = 1;
+		getsym();
+		term(s);
 		if(eMemory == 1){
-			fprintf(outfile,"addr	r%d,r%d\n",r,tok.value);
+			fprintf(outfile,"addr	r%d,r%d\n",r,s);
+			reg[s].disable = 0;
 		}else if(eMemory == 2){
-			fprintf(outfile,"subr	r%d,r%d\n",r,tok.value);
+			fprintf(outfile,"subr	r%d,r%d\n",r,s);
+			reg[s].disable = 0;
 		}
-
-	}while(tok.value == PLUS || tok.value == MINUS);
-	
+	}
+	//using++;
 }
 
-void term(int r)){
-	do{
+void term(int r){
+
+	factor(r);
+
+	int s;
+	if(tok.value == TIMES || tok.value == DIV){
 		int tMemory = 0; //掛け算なら1、割り算なら2を記憶
 		if(tok.value == TIMES){
 			tMemory = 1;
-			getsym(); // ident,number,(
 		}else if(tok.value == DIV){
 			tMemory = 2;
-			getsym();
-		}
-		factor();
 
-		if(tMemory == 1){
-			fprintf(outfile,"mulr	r%d,r%d\n",r,tok.value);
-		}else if(tMemory == 2){
-			fprintf(outfile,"divr	r%d,r%d\n",r,tok.value);
 		}
-	}while(tok.value == TIMES || tok.value == DIV);
-	
+		s = regchoice();
+		regctrl(s);
+		reg[s].disable = 1;
+		getsym();
+		factor(s);
+		if(tMemory == 1){
+			fprintf(outfile,"mulr	r%d,r%d\n",r,s);
+			reg[s].disable = 0;
+		}else if(tMemory == 2){
+			fprintf(outfile,"divr	r%d,r%d\n",r,s);
+			reg[s].disable = 0;
+		}
+	}
 }
 
 
 void factor(int r){
-	getsym(); // -, ident,number,(
+	//getsym(); // -, ident,number,(
 	int fMemory = 0; //マイナスがあるか無いかを記憶
 	if(tok.value == MINUS){
-		tfMemory = 1;
+		fMemory = 1;
 		getsym(); // ident,number,(
 	}
 
 	if(tok.attr == IDENTIFIER){
 		fprintf(outfile,"load	r%d,%d\n",r,getxaddr());
-	}else if(tok.atter == NUMBER){
-		loadi();
+		getsym();
+	}else if(tok.attr == NUMBER){
+		loadi(r);
+		getsym();
 	}else if(tok.value == LPAREN){
-		expression();
+		expression(r);
 		if(tok.value == RPAREN){
 			getsym();
 		}
@@ -304,8 +325,8 @@ void factor(int r){
 
 }
 
-int loadi(int r){
-	if(tok.value =< 32767 && tok.value => -32768){
+void loadi(int r){
+	if(tok.value <= 32767 && tok.value >= -32768){
 		fprintf(outfile,"loadi	r%d,%d\n",r,tok.value);	
 	}else{
 		label += 2;
@@ -400,27 +421,6 @@ void condition(int r1, int r2, int order){
 					fprintf(outfile,"L%d:\n",getlabel(0));
 				}
 				break;
-			/* 
-			case LESSTHAN:
-				compare();
-				fprintf(outfile,"jge	L%d\n",label+order);
-				if(tok.value == THEN){
-					statement();
-				}else if(tok.value == DO){
-					statement();
-				}else{
-					fprintf(outfile,"%d,error: NOT THEN or DO\n",tok.value);
-				}
-				if(order){
-					//while
-					fprintf(outfile,"jmp	L%d\n",label);
-					fprintf(outfile,"L%d:\n",label+1);
-				}else{
-					fprintf(outfile,"jmp	L%d\n",label+1);
-					fprintf(outfile,"L%d:\n",label);
-				}
-				break;
-				*/
 			case GRTRTHAN:
 				compare(r1,r2);
 				fprintf(outfile,"jle	L%d\n",label+order);
@@ -460,27 +460,6 @@ void condition(int r1, int r2, int order){
 					fprintf(outfile,"L%d:\n",getlabel(0));
 				}
 				break;
-			/* 
-			case LESSEQL:
-				compare();
-				fprintf(outfile,"jgt	L%d\n",label+order);
-				if(tok.value == THEN){
-					statement();
-				}else if(tok.value == DO){
-					statement();
-				}else{
-					fprintf(outfile,"%d,error: NOT THEN or DO\n",tok.value);
-				}
-				if(order){
-					//while
-					fprintf(outfile,"jmp	L%d\n",label);
-					fprintf(outfile,"L%d:\n",label+1);
-				}else{
-					fprintf(outfile,"jmp	L%d\n",label+1);
-					fprintf(outfile,"L%d:\n",label);
-				}
-				break;
-			*/
 			case GRTREQL:
 				compare(r1,r2);
 				fprintf(outfile,"jlt	L%d\n",label+order);
@@ -508,7 +487,7 @@ void condition(int r1, int r2, int order){
 
 //使用するラベルの管理
 int getlabel(int plus){
-	printf("%d,%d,%d,%d\n",label, label/2, looping,label - ( label / 2 - looping ) * 2 - 2 + plus);
+	//printf("%d,%d,%d,%d\n",label, label/2, looping,label - ( label / 2 - looping ) * 2 - 2 + plus);
 	return label - ( label / 2 - looping ) * 2 - 2 + plus; 
 }
 
@@ -551,7 +530,7 @@ int regchoice(){
 	int i;
 	for (i = 0; i < REGISTERAVAIABLE; i++)
 	{
-		if(reg[i].used == 0){
+		if(reg[i].used == 0 && !reg[i].disable){
 			choice = i;
 		}
 	}
