@@ -329,9 +329,10 @@ void loadi(int r){
 		fprintf(outfile,"loadi	r%d,%d\n",r,tok.value);	
 	}else{
 		label += 2;
-		fprintf(outfile,"L%d:\n",label);
+		//fprintf(outfile,"L%d:\n",label);
 		fprintf(outfile,"load	r%d,L%d\n",r,label+1);
-		fprintf(outfile,"L%d: data %d\n",label+1,tok.value);
+		fprintf(outfile,"L%d: data %d\n", label+1, tok.value);
+		//fprintf(outfile,"L%d: data 100000\n", label+1);
 	}
 	
 }
@@ -502,7 +503,7 @@ int regsearch(){
 	}
 	return r;
 }
-
+/* 
 //reg[].usedが0のレジスタ番号を返す
 int regchoice(){
 	int choice = -1;
@@ -510,6 +511,19 @@ int regchoice(){
 	for (i = 0; i < REGISTERAVAIABLE; i++)
 	{
 		if(reg[i].used == 0 && !reg[i].disable){
+			choice = i;
+		}
+	}
+	
+	return choice;
+}*/
+//reg[].usedが0のレジスタ番号を返す
+int regchoice(){
+	int choice = -1;
+	int i;
+	for (i = 0; i < REGISTERAVAIABLE; i++)
+	{
+		if(reg[i].used == 0){
 			choice = i;
 		}
 	}

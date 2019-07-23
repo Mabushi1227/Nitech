@@ -1,6 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-@author: taguchi
+
+
+@author: taguchi, akitakazuki
+
+
+t分布による解析
+
 """
 import numpy as np
 import matplotlib.pyplot as plt

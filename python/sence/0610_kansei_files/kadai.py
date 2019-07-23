@@ -4,7 +4,12 @@
 Created on Mon Jun 10 17:27:53 2019
 
 @author: akitakazuki
+
+数量化3類とクラスター分析を行うプログラム
+
 """
+
+
 
 import numpy as np
 from scipy.cluster.hierarchy import dendrogram, linkage, set_link_color_palette
