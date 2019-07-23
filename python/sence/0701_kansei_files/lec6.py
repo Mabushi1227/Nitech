@@ -2,7 +2,9 @@
 """
 Created on Mon Apr 22 17:47:04 2019
 
-@author: taguchi
+@author: taguchi akitakazuki
+
+重回帰分析を行うプログラム
 """
 import numpy as np
 import matplotlib.pyplot as plt

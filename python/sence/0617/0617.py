@@ -4,6 +4,9 @@
 Created on Mon Jun 17 16:57:51 2019
 
 @author: akitakazuki
+
+単回帰分析を行うプログラム
+
 """
 
 import numpy as np

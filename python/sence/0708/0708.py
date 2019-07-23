@@ -82,7 +82,8 @@ if __name__ == "__main__":
     R2 =  Sr / Syy #寄与率
     R_2 =  1 - (( Se[:] / (n-2))/( Syy / (n-1))) #自由度調整済寄与率
     
-    F0 = (Syy - Se[:]) / (n-1-n+2) / (Se[:]/(n-2))
+    F0 = (Syy - Se[:]) / (n-1-n+2) / (Se[:]/(n-2)) ##単回帰の分散比
+    
     
     plot_x = np.arange(2,14,0.1)
     for i in range(x.shape[1]):
