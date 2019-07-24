@@ -7,7 +7,7 @@ extern TOKEN tok;
 extern FILE *infile;
 extern FILE *outfile;
 
-#define REGISTERAVAIABLE 4 //計算に使用できるレジスタ数
+#define REGISTERAVAIABLE 4
 
 typedef struct 
 {
@@ -16,7 +16,6 @@ typedef struct
 }s_entry;
 
 s_entry s_table[32];
-
 int count = 0;  //変数の数を保存
 int label = 0; //ラベル数
 
@@ -24,35 +23,27 @@ typedef struct {
 	int ident; //記録している変数のアドレスを保存
 	int used; //使われた順番を記録
 	int disable; //上書き可能なら０,不可能なら1
-} Register; //レジスタ制御のための構造体
+} Register;
 Register reg[REGISTERAVAIABLE];
 
 void error(char *s);
 void outblock(void);
 void statement(void);
-void expression(int r); 	//計算式解析関数1．結果をレジスタ[r]に入れる
-void term(int r); 			//計算式解析関数2．結果をレジスタ[r]に入れる
-void factor(int r);         //計算式解析関数3．結果をレジスタ[r]に入れる
+void expression(int r); //結果をレジスタ[r]に入れる
+void term(int r); //計算式の解析
+void factor(int r); //計算式の解析
 void condition(int r1,int r2,int order,int labaling);  //結果をレジスタ[r]に入れる, order 0->if, 1->while
  
-int getxaddr(); 				//記号表から変数のアドレスを返す
-int getlabel(int plus);  		//使用ラベルの管理,前半ラベル->plus=0,後半ラベルplus=1 
-void compare(int r1,int r2); 	//レジスタr1とr2でcmpr命令を作成する
-void reginit(); 				//レジスタの初期化
-int regsearch(); 				//レジスタ内に変数が記憶されているかを検索する
-void regctrl(int number);		//レジスタ[number]を使用時、レジスタの使用された順番を記憶する
-int regchoice(); 				//レジスタの値を決定する関数、なるべく上の階層で呼び出す
-void loadi(int r); 				//即値を呼び出すときに使用する
-int over_i[32][2] = {{0,-1}};   //域を越えた即値を保存する over_i[0]は個数を入れる。[][0[][1]
+int getxaddr();
+int getlabel(int plus);  //使用ラベルの管理,前半ラベル->plus=0,後半ラベルplus=1 
+void compare(int r1,int r2);
+void reginit();
+int regsearch();
+void regctrl(int number);
+int regchoice();
+void loadi(int r);
+int over_i[32][2] = {{0,-1}}; //域を越えた即値を保存する over_i[0]は個数を入れる
 
-typedef struct {
-	int length;  //全体の個数
-	int label[]; //ラベル
-	int im[]; 	 //即値
-} over_I; //絶対値が2の16乗を越えた即値を記憶するための構造体
-over_I over_i;
-
-//メインの処理
 void compiler(void){
 	init_getsym();
 
@@ -68,9 +59,11 @@ void compiler(void){
 
 			if (tok.attr == SYMBOL && tok.value == SEMICOLON){
 
-				reginit(); //レジスタの初期化
+				//getsym();
+				reginit();
 				
-				outblock(); //メインの処理
+				
+				outblock();
 
 				int i;
 				for(i=1; i <= over_i[0][0]; i++){
@@ -95,12 +88,15 @@ void error(char *s){
 //
 void outblock(void){
 	getsym();
+	//fprintf(outfile,"%d",tok.value);
 	if(tok.value == VAR){
 		do{
 			getsym();
 			if(tok.attr == IDENTIFIER){
 				s_table[count].addr = count; 
 				strcpy(s_table[count].v, tok.charvalue);
+				//デバッグ用
+				//fprintf(outfile,"%s\n",s_table[count].v);
 				count++;
 			}
 			getsym();
@@ -115,8 +111,11 @@ void outblock(void){
 }
 
 void statement(void){
-
+	//int r;
+	
 	getsym();
+
+	printf("%d\n",tok.value);
 
 	if(tok.attr == IDENTIFIER){
 		int xaddr = getxaddr();  //代入先のアドレス
@@ -131,8 +130,12 @@ void statement(void){
 			fprintf(outfile,"store	r%d,%d\n",raddr,xaddr);
 			reg[raddr].ident = xaddr;
 			reg[raddr].disable = 0;
+			//using = 0;
 
 			printf("%d\n",tok.value);
+
+			//fprintf(outfile,"loadr	r%d,r%d\n",r,offset); テスト
+			//fprintf(outfile,"%d\n",tok.value);
 		}else if(tok.value == PERIOD){
 			fprintf(outfile,"halt\n");
 		}
@@ -146,7 +149,7 @@ void statement(void){
 		if(tok.value == END){
 			getsym();
 			if(tok.value == SEMICOLON){
-
+				//statement();  
 			}else if(tok.value == PERIOD){
 				fprintf(outfile,"halt\n");
 			}
@@ -164,6 +167,7 @@ void statement(void){
 		regctrl(rnumber2);
 		expression(rnumber1);
 		condition(rnumber1,rnumber2,0,labeling);
+		//printf("xxx%d",tok.value);
 		if(tok.value == ELSE){
 			fprintf(outfile,"jmp	L%d\n",labeling+1);
 			fprintf(outfile,"L%d:\n",labeling);
@@ -182,7 +186,6 @@ void statement(void){
 		label += 2;
 		fprintf(outfile,"L%d:\n",labeling);
 		getsym(); //IDENTFIER
-
 		//使用するレジスタを決める
 		int rnumber1 = regchoice();
 		regctrl(rnumber1);
@@ -191,11 +194,14 @@ void statement(void){
 		expression(rnumber1);
 		reg[rnumber1].disable = 1;
 		reg[rnumber2].disable = 1;
-
+		//printf("xx%d",tok.value);
 		condition(rnumber1,rnumber2,1,labeling);
 
 		reg[rnumber1].disable = 0;
 		reg[rnumber2].disable = 0;
+
+
+		//statement();
 
 	}else if(tok.value == WRITE){ //write命令
 		do {
@@ -323,7 +329,7 @@ void loadi(int r){
 		fprintf(outfile,"loadi	r%d,%d\n",r,tok.value);	
 	}else{
 		label += 2;
-
+		//fprintf(outfile,"L%d:\n",label);
 		fprintf(outfile,"load	r%d,L%d\n",r,label+1);
 
 		over_i[0][0]++; //over_i[0][0]は記録されている即値の個数
@@ -460,6 +466,12 @@ void condition(int r1, int r2, int order,int labeling){
 	}
 }
 
+//使用するラベルの管理
+/*int getlabel(int plus){
+	//printf("%d,%d,%d,%d\n",label, label/2, looping,label - ( label / 2 - looping ) * 2 - 2 + plus);
+	return label - ( label / 2 - looping ) * 2 - 2 + plus; 
+}*/
+
 //レジスタ変数の初期化
 void reginit(){
 	int i;
@@ -511,6 +523,20 @@ int regchoice(){
 
 	return choice;
 }
+/*
+//reg[].usedが0のレジスタ番号を返す
+int regchoice(){
+	int choice = -1;
+	int i;
+	for (i = 0; i < REGISTERAVAIABLE; i++)
+	{
+		if(reg[i].used == 0){
+			choice = i;
+		}
+	}
+	
+	return choice;
+}*/
 
 //numberのレジスタを使用した時の後処理
 //expression,condition内では行わない
@@ -526,7 +552,7 @@ void regctrl(int number){
 	reg[number].used = REGISTERAVAIABLE - 1; //新しく使用するレジスタのusedを末尾に移動
 }
 
-/*トップダウン以前のexpression
+/*前回までのexpression
 //数式(結果をレジスタ[r]に出力する)
 void expression(int r){
 	if(tok.attr == NUMBER){
