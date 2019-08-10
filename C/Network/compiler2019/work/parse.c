@@ -29,13 +29,15 @@ Register reg[REGISTERAVAIABLE];
 
 void error(char *s);
 void outblock(void);
+void inblock(void);
 void statement(void);
 void expression(int r); 	//計算式解析関数1．結果をレジスタ[r]に入れる
 void term(int r); 			//計算式解析関数2．結果をレジスタ[r]に入れる
 void factor(int r);         //計算式解析関数3．結果をレジスタ[r]に入れる
-void condition(int r1,int r2,int order,int labaling);  //結果をレジスタ[r]に入れる, order 0->if, 1->while
+void condition(int r1,int r2,int order,int labeling);  //結果をレジスタ[r]に入れる, order 0->if, 1->while
  
-int getxaddr(); 				//記号表から変数のアドレスを返す
+int getxaddr(); 				//記号表から変数のアドレスを返す - 大局変数
+int getxaddr_p(); 				//記号表から変数のアドレスを返す - 手続き内変数
 int getlabel(int plus);  		//使用ラベルの管理,前半ラベル->plus=0,後半ラベルplus=1 
 void compare(int r1,int r2); 	//レジスタr1とr2でcmpr命令を作成する
 void reginit(); 				//レジスタの初期化
@@ -43,14 +45,19 @@ int regsearch(); 				//レジスタ内に変数が記憶されているかを検
 void regctrl(int number);		//レジスタ[number]を使用時、レジスタの使用された順番を記憶する
 int regchoice(); 				//レジスタの値を決定する関数、なるべく上の階層で呼び出す
 void loadi(int r); 				//即値を呼び出すときに使用する
+void loadx(int r);				//変数を呼び出すときに使用する
+
 int over_i[32][2] = {{0,-1}};   //域を越えた即値を保存する over_i[0]は個数を入れる。[][0[][1]
 
 typedef struct {
-	int length;  //全体の個数
-	int label[]; //ラベル
-	int im[]; 	 //即値
-} over_I; //絶対値が2の16乗を越えた即値を記憶するための構造体
-over_I over_i;
+	char name[32]; //手続きの名前
+	int addr; //記号表内のアドレス
+	int num1; //使用する引数の数
+	int num2; //使用する局所変数の数
+	s_entry table[32]; //手続きで使用する記号表
+} Procedure; //手続き処理のための構造体
+Procedure pr;
+void prinit();
 
 //メインの処理
 void compiler(void){
@@ -69,14 +76,15 @@ void compiler(void){
 			if (tok.attr == SYMBOL && tok.value == SEMICOLON){
 
 				reginit(); //レジスタの初期化
-				
+				prinit();  //手続き変数の初期化
+
 				outblock(); //メインの処理
 
 				int i;
 				for(i=1; i <= over_i[0][0]; i++){
 					fprintf(outfile,"L%d: data %d\n", over_i[i][0], over_i[i][1]);
 				}
-				
+
 				if (tok.attr == SYMBOL && tok.value == PERIOD){
 					fprintf(stderr, "Parsing Completed. No errors found.\n");
 				} else error("At the end, a period is required.");
@@ -109,9 +117,76 @@ void outblock(void){
 		if(tok.value == SEMICOLON){
 			statement();
 		}else{ 
-			printf("error\n");
+			printf("error In outblock\n");
+			fprintf(outfile,"error In outblock\n");
 		}
 	}
+}
+
+void inblock(void){
+	getsym(); // (
+	if(tok.value == LPAREN){
+		do{
+			getsym(); //ident
+			strcpy(pr.table[pr.num1].v, tok.charvalue);
+			pr.num1++;
+			getsym(); // , or )
+		}while(tok.value == COMMA);
+
+		int i;
+		for(i = 0; i < pr.num1; i++){
+			pr.table[i].addr = i - pr.num1 - 1; 
+		}
+
+		if(tok.value == RPAREN){
+			getsym(); // ;
+		}else{
+			printf("syntax error in inblock\n");
+		}
+		
+		if(tok.value == SEMICOLON){
+			getsym();// var
+		}else{
+			printf("syntax error in inblock\n");
+		}
+
+		if(tok.value == VAR){
+			do{
+				getsym(); //ident
+				strcpy(pr.table[pr.num1+pr.num2].v, tok.charvalue);
+				pr.table[pr.num1+pr.num2].addr = pr.num2+1;
+				pr.num2++;
+				getsym(); //;
+			}while(tok.value == COMMA);
+			
+			if(tok.value == SEMICOLON){ //callee
+				pr.table[pr.num1+pr.num2].addr = 0;
+				fprintf(outfile,"loadi r4,%d\n",count-1);
+
+				fprintf(outfile,"jmp main\n");
+				fprintf(outfile,"%s: \n",pr.name);
+				fprintf(outfile,"push r5\n");
+				fprintf(outfile,"loadr r5,r4\n");
+				fprintf(outfile,"addi r4,%d\n",pr.num2);
+
+				statement(); //procedure 中身定義
+				
+				fprintf(outfile,"subi r4,%d\n",pr.num2);
+				fprintf(outfile,"pop r5\n");
+				fprintf(outfile,"return \n");
+				fprintf(outfile,"main: \n");
+				pr.table[31].addr = -1;
+				
+			}
+		}else{
+			printf("syntax error in inblock\n");
+		}
+
+	}else{
+		printf("error: in inblock\n");
+		fprintf(outfile,"error: in inblock\n");
+	}
+
 }
 
 void statement(void){
@@ -120,7 +195,7 @@ void statement(void){
 
 	if(tok.attr == IDENTIFIER){
 		int xaddr = getxaddr();  //代入先のアドレス
-		getsym();
+		getsym(); // := or (
 		if(tok.value == BECOMES){
 			getsym();  //数式の始め
 
@@ -132,7 +207,22 @@ void statement(void){
 			reg[raddr].ident = xaddr;
 			reg[raddr].disable = 0;
 
-			printf("%d\n",tok.value);
+		}else if(tok.value == LPAREN){ //paramlist , caller
+			int i;
+			for (i = 0; i < pr.num1; i++){
+				getsym(); //ex
+				int tmp = regchoice();
+				regctrl(tmp);
+				expression(tmp);
+				fprintf(outfile,"push	r%d\n",tmp);
+				reg[tmp].disable = 0;
+			}
+
+			fprintf(outfile,"call %s\n",pr.name);
+			fprintf(outfile,"subi r4,%d\n",pr.num1);
+
+			getsym(); // )
+
 		}else if(tok.value == PERIOD){
 			fprintf(outfile,"halt\n");
 		}
@@ -151,7 +241,7 @@ void statement(void){
 				fprintf(outfile,"halt\n");
 			}
 		}else{
-			printf("%d\n",tok.value);
+			printf("error: NOT END, %s\n",tok.charvalue);
 			fprintf(outfile,"error: NOT END\n"); 
 		}
 	}else if(tok.value == IF){
@@ -164,6 +254,7 @@ void statement(void){
 		regctrl(rnumber2);
 		expression(rnumber1);
 		condition(rnumber1,rnumber2,0,labeling);
+
 		if(tok.value == ELSE){
 			fprintf(outfile,"jmp	L%d\n",labeling+1);
 			fprintf(outfile,"L%d:\n",labeling);
@@ -174,7 +265,8 @@ void statement(void){
 		}else if(tok.value == PERIOD){
 				fprintf(outfile,"halt\n");
 		}else{
-			fprintf(outfile,"error: IN IF");
+			fprintf(outfile,"error: IN IF\n");
+			printf("error: IN IF\n");
 		}
 
 	}else if(tok.value == WHILE){
@@ -209,7 +301,15 @@ void statement(void){
 				}else{ 					  //レジスタに入っていないならロードして書く
 					regnum = regchoice();
 					regctrl(regnum);
-					fprintf(outfile,"load	r%d,%d\n",regnum,getxaddr());
+					int addr = getxaddr_p();
+					if(addr != -1){
+						fprintf(outfile,"load	r%d,%d(BR)\n",regnum,addr);
+					}else{
+						addr = getxaddr();
+						if(addr != -1){
+							fprintf(outfile,"load	r%d,%d\n",regnum,addr);
+						}
+					}
 					fprintf(outfile,"writed	r%d\n",regnum);
 				}
 				//改行を出力する処理
@@ -220,11 +320,32 @@ void statement(void){
 				getsym(); // "," or ""
 			}else{
 				fprintf(outfile,"error: IN WRITE, NOT IDENTIFIER\n");
+				printf("error: IN WRITE, NOT IDENTIFIER\n");
 			}
 		}while(tok.value == COMMA);
+
+	}else if(tok.value == PROCEDURE){  //callee
+		getsym();
+		//手続きを変数表に追加する
+		if(tok.attr == IDENTIFIER){
+			s_table[count].addr = count; 
+			pr.addr = count;
+
+			strcpy(s_table[count].v, tok.charvalue);
+			strcpy(pr.name, tok.charvalue);
+			count++;
+
+		}else{
+			printf("error: IN PROCEDURE\n");
+			fprintf(outfile,"error: IN PROCEDURE\n");
+		}
+
+		inblock();
+		statement(); //main
+
 	}else{
-		printf("error:NOT EXIST ORDER\n");
-		exit(1);
+		printf("error:NOT EXIST ORDER %d\n",tok.value);
+		fprintf(outfile,"error:NOT EXIST ORDER %d\n",tok.value);
 	}
 }
 
@@ -296,7 +417,20 @@ void factor(int r){
 	}*/
 
 	if(tok.attr == IDENTIFIER){
-		fprintf(outfile,"load	r%d,%d\n",r,getxaddr());
+		loadx(r);
+		/*
+		int a = getxaddr_p();
+		if(a != -1){
+			fprintf(outfile,"load	r%d,%d(BR)\n",r,a);
+		}else{
+			a = getxaddr();
+			if(a != -1){
+				fprintf(outfile,"load	r%d,%d\n",r,a);
+			}else{
+				printf("error %s not found\n",tok.charvalue);
+				fprintf(outfile,"error %s not found\n",tok.charvalue);
+			}
+		}*/
 		getsym();
 	}else if(tok.attr == NUMBER){
 		loadi(r);
@@ -318,6 +452,7 @@ void factor(int r){
 
 }
 
+//即値を呼び出す関数
 void loadi(int r){
 	if(tok.value <= 32767 && tok.value >= -32768){
 		fprintf(outfile,"loadi	r%d,%d\n",r,tok.value);	
@@ -333,13 +468,57 @@ void loadi(int r){
 	
 }
 
-//変数(アドレス)の取得
+ 
+void loadx(int r){
+	if(pr.table[31].addr == 0){
+		int a = getxaddr_p();
+		if(a != -1){
+			fprintf(outfile,"load	r%d,%d(BR)\n",r,a);
+		}else{
+			a = getxaddr();
+			if(a != -1){
+				fprintf(outfile,"load	r%d,%d\n",r,a);
+			}else{
+				printf("error %s not found\n",tok.charvalue);
+				fprintf(outfile,"error %s not found\n",tok.charvalue);
+			}
+		}
+	}else{
+		int a = getxaddr();
+		if(a != -1){
+			fprintf(outfile,"load	r%d,%d\n",r,a);
+		}else{
+			a = getxaddr_p();
+			if(a != -1){
+				fprintf(outfile,"load	r%d,%d(BR)\n",r,a);
+			}else{
+				printf("error %s not found\n",tok.charvalue);
+				fprintf(outfile,"error %s not found\n",tok.charvalue);
+			}
+		}
+	}
+}
+
+
+//変数(アドレス)の取得 - 大局変数
 int getxaddr(){
 	int xaddr = -1;  //見つからなかったら-1が返される
 	int i;
 	for(i = 0; i < count; i++){
 		if(strcmp(s_table[i].v,tok.charvalue) == 0){
 				xaddr = s_table[i].addr;
+		}
+	}
+	return xaddr;
+}
+
+//変数アドレスの取得 - 手続き内
+int getxaddr_p(){
+	int xaddr = -1;  //見つからなかったら-1が返される
+	int i;
+	for(i = 0; i < pr.num1+pr.num2; i++){
+		if(strcmp(pr.table[i].v,tok.charvalue) == 0){
+				xaddr = pr.table[i].addr;
 		}
 	}
 	return xaddr;
@@ -365,6 +544,7 @@ void condition(int r1, int r2, int order,int labeling){
 					statement();
 				}else{
 					fprintf(outfile,"%d,error: NOT THEN or DO\n",tok.value);
+					printf("%d,error: NOT THEN or DO\n",tok.value);
 				}
 				if(order){
 					//while
@@ -381,6 +561,7 @@ void condition(int r1, int r2, int order,int labeling){
 					statement();
 				}else{
 					fprintf(outfile,"%d,error: NOT THEN or DO\n",tok.value);
+					printf("%d,error: NOT THEN or DO\n",tok.value);
 				}
 				if(order){
 					//while
@@ -398,6 +579,7 @@ void condition(int r1, int r2, int order,int labeling){
 					statement();
 				}else{
 					fprintf(outfile,"%d,error: NOT THEN or DO\n",tok.value);
+					printf("%d,error: NOT THEN or DO\n",tok.value);
 				}
 				if(order){
 					//while
@@ -414,6 +596,7 @@ void condition(int r1, int r2, int order,int labeling){
 					statement();
 				}else{
 					fprintf(outfile,"%d,error: NOT THEN or DO\n",tok.value);
+					printf("%d,error: NOT THEN or DO\n",tok.value);
 				}
 				if(order){
 					//while
@@ -431,6 +614,7 @@ void condition(int r1, int r2, int order,int labeling){
 					statement();
 				}else{
 					fprintf(outfile,"%d,error: NOT THEN or DO\n",tok.value);
+					printf("%d,error: NOT THEN or DO\n",tok.value);
 				}
 				if(order){
 					//while
@@ -494,7 +678,7 @@ int regsearch(){
 	return r;
 }
  
-//reg[].usedが0のレジスタ番号を返す
+//reg[].disableが0(使用可能)で、reg[].usedが最も少ないレジスタ番号を返す
 int regchoice(){
 	int choice = -1;
 	int i;
@@ -513,7 +697,6 @@ int regchoice(){
 }
 
 //numberのレジスタを使用した時の後処理
-//expression,condition内では行わない
 void regctrl(int number){
 	int j;
 	for (j = 0; j < REGISTERAVAIABLE; j++) //新しく使用するレジスタ以降を１つずつずらす
@@ -524,6 +707,13 @@ void regctrl(int number){
 	}
 	reg[number].ident = - 1; //使用するレジスタの初期化
 	reg[number].used = REGISTERAVAIABLE - 1; //新しく使用するレジスタのusedを末尾に移動
+}
+
+//手続き変数の初期化
+void prinit(){
+	pr.addr = -1;
+	pr.num1 = 0;
+	pr.num2 = 0;
 }
 
 /*トップダウン以前のexpression
