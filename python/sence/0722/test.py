@@ -179,26 +179,7 @@ if __name__ == "__main__":
     print("Se\n",Se,"\nSr(回帰による平方和)\n",Sr,
                       "\nSyy\n",Syy,"\nR2（寄与率）\n",R2)
     """
-####################################
-# CSVを読み込む関数
-# filename : ファイル名
-# f_skip_first_row : １行目を読み飛ばすならTrue
-# f_skip_first_col : １列目を読み飛ばすならTrue
-####################################    
-def loadCSV(filename,f_skip_first_row = False,f_skip_first_col=False):
-    _skiprows = 0
-
-    if f_skip_first_row==True:
-        _skiprows = 1
-        
-    d = np.loadtxt(filename,delimiter=',',skiprows=_skiprows)
     
-
-    if f_skip_first_col==True:
-        d = d[:,1:]
-
-    return d
-
 ####################################
 # 散布図を描画する関数
 # x,y: データ
