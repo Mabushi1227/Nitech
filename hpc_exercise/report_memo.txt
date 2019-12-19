@@ -1,0 +1,33 @@
+課題1
+time(mul): 0.008666 ms
+time(mul): 0.002253 ms
+time(mul): 0.001673 ms
+time(mul): 0.001542 ms
+time(mul): 0.001554 ms
+time(mul): 0.001483 ms
+time(mul): 0.006685 ms
+time(mul): 0.001563 ms
+time(mul): 0.001673 ms
+time(mul): 0.001828 ms
+time (avg,mul): 0.00225044 ms
+time(add): 0.001759 ms
+time(add): 0.001166 ms
+time(add): 0.00108 ms
+time(add): 0.001059 ms
+time(add): 0.005817 ms
+time(add): 0.001117 ms
+time(add): 0.001025 ms
+time(add): 0.001054 ms
+time(add): 0.001091 ms
+time(add): 0.001284 ms
+time (avg,add): 0.00163256 ms
+
+課題2
+loop = 100
+-O0 time (avg): 0.00202942 ms
+-O1 time (avg): 0.00222699 ms
+-O2 time (avg): 0.00195422 ms
+-O3 time (avg): 0.00203318 ms
+-Ofast time (avg): 0.00201143 ms
+-Os time (avg): 0.00189331 ms
+-Og 0.00199835 ms
