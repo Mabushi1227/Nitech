@@ -23,11 +23,21 @@ time(add): 0.001284 ms
 time (avg,add): 0.00163256 ms
 
 課題2
-loop = 100
--O0 time (avg): 0.00202942 ms
--O1 time (avg): 0.00222699 ms
--O2 time (avg): 0.00195422 ms
--O3 time (avg): 0.00203318 ms
--Ofast time (avg): 0.00201143 ms
--Os time (avg): 0.00189331 ms
--Og 0.00199835 ms
+loop = 10
+t.getAvgTime(true)
+-O0 time (avg): 0.00306789 ms
+-O1 time (avg): 0.002865 ms
+-O2 time (avg): 0.00283778 ms
+-O3 time (avg): 0.00271856 ms
+-Ofast time (avg): 0.00265833 ms
+-Os time (avg): time (avg): 0.00294089 ms
+-Og time (avg): 0.00275278 ms
+
+課題7
+pow関数はほぼ変化がない。
+for文を使うと、途中までおちて上がる
+
+課題8
+行列を128,128に変更
+
+課題9

@@ -3,7 +3,6 @@
 #include "utils/simd_util.h"
 #include <math.h>
 
-#define PI 3.14159265359
 
 //課題12
 inline void rot(double a, double b, double &x, double &y, double radian)
@@ -93,7 +92,7 @@ int main(const int argc, const char** argv)
 	if (false)
 	{
 		std::cout << "課題2" << std::endl;
-		const int loop = 100;
+		const int loop = 10;
 		const int row = 3;
 		const int col = 3;
 		Mat_32F a(row, col);
@@ -111,7 +110,7 @@ int main(const int argc, const char** argv)
 			t.end();
 			std::cout << "time: " << t.getLastTime() << " ms" << std::endl;
 		}
-		std::cout << "time (avg): " << t.getAvgTime() << " ms" << std::endl;
+		std::cout << "time (avg): " << t.getAvgTime(true) << " ms" << std::endl;
 
 		a.show();
 		b.show();
@@ -166,7 +165,7 @@ int main(const int argc, const char** argv)
 				for (int i = 0; i < x.cols; i++)
 				{
 					//計算
-					ret.data[j*ret.cols+i]=3*(pow(x.data[j*x.cols+i],4.0)+pow(x.data[j*x.cols+i],3.0))+3;
+					ret.data[j*ret.cols+i]=3*(pow(x.data[j*x.cols+i],3.0)*(x.data[j*x.cols+i]+1))+3;
 				}
 			}
 			t.end();
@@ -182,7 +181,7 @@ int main(const int argc, const char** argv)
 	//課題4
 	//小さな行列に対して，各要素を下記の定数倍するプログラムを作成し，数式の展開前後で計算速度を比較せよ．
 	//(2π+sqrt(5)+0.5^2)x
-	//if (false)
+	if (false)
 	{
 		std::cout << "課題4" << std::endl;
 		const int loop = 10;
@@ -204,7 +203,7 @@ int main(const int argc, const char** argv)
 				for (int i = 0; i < x.cols; i++)
 				{
 					//計算
-					ret.data[j*x.cols+i]=(2*M_PI+sqrt(5)+pow(0.5,0.5))*x.data[j*x.cols+i]
+					ret.data[j*x.cols+i]=(2*M_PI+sqrt(5)+pow(0.5,0.5))*x.data[j*x.cols+i];
 				}
 			}
 			t.end();
@@ -212,25 +211,28 @@ int main(const int argc, const char** argv)
 		}
 		std::cout << "before: time (avg): " << t.getAvgTime() << " ms" << std::endl;
 
+		ret.show();
+
 		//after
 		const float c = (2 * 3.14 + sqrt(5) + 0.5*0.5);
 		for (int k = 0; k < loop; k++)
 		{
 			//先に計算する場合
 			t.start();
-			tmp=2*M_PI+sqrt(5)+pow(0.5,0.5)
+			float tmp=2*M_PI+sqrt(5)+pow(0.5,0.5);
 			for (int j = 0; j < x.rows; j++)
 			{
 				for (int i = 0; i < x.cols; i++)
 				{
 					//計算
-					ret.data[j*x.cols+i]=tmp*x.data[j*x.cols+i]
+					ret.data[j*x.cols+i]=tmp*x.data[j*x.cols+i];
 				}
 			}
 			t.end();
 			std::cout << "after: time: " << t.getLastTime() << " ms" << std::endl;
 		}
-		std::cout << "after: time (avg): " << t.getAvgTime() << " ms" << std::endl;
+		std::cout << "after: time (avg): " << t.getAvgTime(true) << " ms" << std::endl;
+		ret.show();
 
 		return 0;
 	}
@@ -250,7 +252,12 @@ int main(const int argc, const char** argv)
 		mat_zero(ret);
 
 		CalcTime t;
+
+		float PI = 3.141592; //使用する円周率
+		float PIr = 1 / 3.141592; //円周率の逆数
+
 		//before
+
 		for (int k = 0; k < loop; k++)
 		{
 			//除算の場合
@@ -260,13 +267,14 @@ int main(const int argc, const char** argv)
 				for (int i = 0; i < x.cols; i++)
 				{
 					//計算
-					//XXXX
+					ret.data[j*x.cols+i]=x.data[j*x.cols+i] / PI;
 				}
 			}
 			t.end();
 			std::cout << "div: time: " << t.getLastTime() << " ms" << std::endl;
 		}
 		std::cout << "div: time (avg): " << t.getAvgTime() << " ms" << std::endl;
+		ret.show();
 
 		//after
 		for (int k = 0; k < loop; k++)
@@ -278,14 +286,14 @@ int main(const int argc, const char** argv)
 				for (int i = 0; i < x.cols; i++)
 				{
 					//計算
-					//XXXX
+					ret.data[j*x.cols+i]=x.data[j*x.cols+i] * PIr;
 				}
 			}
 			t.end();
 			std::cout << "mul: time: " << t.getLastTime() << " ms" << std::endl;
 		}
 		std::cout << "mul: time (avg): " << t.getAvgTime() << " ms" << std::endl;
-
+		ret.show();
 		return 0;
 	}
 
@@ -320,13 +328,14 @@ int main(const int argc, const char** argv)
 				for (int i = 0; i < ret.cols; i++)
 				{
 					//計算
-					//XXXX
+					ret.data[j*ret.cols+i]=(a.data[j*a.cols+i]/b.data[j*b.cols+i]) * (c.data[j*c.cols+i]/d.data[j*d.cols+i]);
 				}
 			}
 			t.end();
 			std::cout << "before: time: " << t.getLastTime() << " ms" << std::endl;
 		}
 		std::cout << "before: time (avg): " << t.getAvgTime() << " ms" << std::endl;
+		ret.show();
 
 		//after
 		for (int k = 0; k < loop; k++)
@@ -338,13 +347,14 @@ int main(const int argc, const char** argv)
 				for (int i = 0; i < ret.cols; i++)
 				{
 					//計算
-					//XXXX
+					ret.data[j*ret.cols+i]=(a.data[j*a.cols+i]*c.data[j*c.cols+i]) / (b.data[j*b.cols+i]*d.data[j*d.cols+i]);
 				}
 			}
 			t.end();
 			std::cout << "after: time: " << t.getLastTime() << " ms" << std::endl;
 		}
 		std::cout << "after: time (avg): " << t.getAvgTime() << " ms" << std::endl;
+		ret.show();
 
 		return 0;
 	}
@@ -357,22 +367,29 @@ int main(const int argc, const char** argv)
 		const int loop = 1000;
 		const int n = 50;
 		const float v = 2.5f;
-		float ret = 0;
+		float ret = 1;
 
-		for (int i = 0; i < n; i++)
+	 
+		for (int i = 3; i < n; i++)
 		{
 			CalcTime t;
 			//v^i乗を計算
+
 			for (int j = 0; j < loop; j++)
 			{
+				ret = 1;
 				t.start();
 				//pow，計算
-				//XXXX
+				//ret = pow(v,i);
+				for (int k = 0; k < i; k++)
+				{
+					ret = ret * v;
+				}
 				t.end();
 				//std::cout<< "time: " << t.getLastTime() << " ms" << std::endl;
 			}
 			std::cout << i << " : time (avg): " << t.getAvgTime() << " ms" << std::endl;
-			//std::cout << ret << std::endl;
+			std::cout << ret << std::endl;
 		}
 		return 0;
 	}
@@ -385,8 +402,8 @@ int main(const int argc, const char** argv)
 	{
 		std::cout << "課題8" << std::endl;
 		const int loop = 1000;
-		const int row = 64;
-		const int col = 64;
+		const int row = 128;
+		const int col = 128;
 
 		//unsigend char
 		Mat_8U a_8u(row, col);
@@ -401,7 +418,7 @@ int main(const int argc, const char** argv)
 		{
 			t.start();
 			//unsigned char
-			//XXXX
+			ret_8u = mat_add(a_8u,b_8u);
 			t.end();
 			//std::cout<< "time: " << t.getLastTime() << " ms" << std::endl;
 		}
@@ -419,7 +436,7 @@ int main(const int argc, const char** argv)
 		{
 			t.start();
 			//short
-			//XXXX
+			ret_16s = mat_add(a_16s,b_16s);
 			t.end();
 			//std::cout<< "time: " << t.getLastTime() << " ms" << std::endl;
 		}
@@ -437,7 +454,7 @@ int main(const int argc, const char** argv)
 		{
 			t.start();
 			//int
-			//XXXX
+			ret_32s = mat_add(a_32s,b_32s);
 			t.end();
 			//std::cout<< "time: " << t.getLastTime() << " ms" << std::endl;
 		}
@@ -456,7 +473,7 @@ int main(const int argc, const char** argv)
 		{
 			t.start();
 			//float
-			//XXXX
+			ret_32f = mat_add(a_32f,b_32f);
 			t.end();
 			//std::cout<< "time: " << t.getLastTime() << " ms" << std::endl;
 		}
@@ -474,8 +491,8 @@ int main(const int argc, const char** argv)
 		for (int i = 0; i < loop; i++)
 		{
 			t.start();
-			//float
-			//XXXX
+			//double
+			ret_64f = mat_add(a_64f,b_64f);
 			t.end();
 			//std::cout<< "time: " << t.getLastTime() << " ms" << std::endl;
 		}
@@ -491,7 +508,7 @@ int main(const int argc, const char** argv)
 	//加えて，floatの行列で，2.0で除算する場合と0.5で乗算する場合を比較せよ．
 	//なお，浮動小数点で乗算する場合は整数の場合よりも遅い． 
 	//また，大きい行列サイズでないと，効果がでない場合がある．
-	if (false)
+	//if (false)
 	{
 		std::cout << "課題9" << std::endl;
 		const int loop = 1000;
@@ -514,13 +531,13 @@ int main(const int argc, const char** argv)
 			{
 				for (int i = 0; i < ret_32s.cols; i++)
 				{
-					//XXXX
+					ret_32s.data[j*ret_32s.cols+i] = x_32s.data[j*x_32s.cols+i] * 2;
 				}
 			}
 			t.end();
 		}
 		std::cout << "2x mul: time (avg): " << t.getAvgTime() << " ms" << std::endl;
-		
+
 		//2.0x mul
 		for (int k = 0; k < loop; k++)
 		{
@@ -530,7 +547,7 @@ int main(const int argc, const char** argv)
 			{
 				for (int i = 0; i < ret_32s.cols; i++)
 				{
-					//XXXX
+					ret_32s.data[j*ret_32s.cols+i] = x_32s.data[j*ret_32s.cols+i]*2.0;
 				}
 			}
 			t.end();
@@ -546,7 +563,7 @@ int main(const int argc, const char** argv)
 			{
 				for (int i = 0; i < ret_32s.cols; i++)
 				{
-					//XXXX
+					ret_32s.data[j*ret_32s.cols+i] = x_32s.data[j*ret_32s.cols+i] << 1;
 				}
 			}
 			t.end();
@@ -563,7 +580,7 @@ int main(const int argc, const char** argv)
 			{
 				for (int i = 0; i < ret_32s.cols; i++)
 				{
-					//XXXX
+					ret_32s.data[j*ret_32s.cols+i] = x_32s.data[j*ret_32s.cols+i]  / 2;
 				}
 			}
 			t.end();
@@ -579,7 +596,7 @@ int main(const int argc, const char** argv)
 			{
 				for (int i = 0; i < ret_32s.cols; i++)
 				{
-					//XXXX
+					ret_32s.data[j*ret_32s.cols+i] = x_32s.data[j*ret_32s.cols+i] / 0.5;
 				}
 			}
 			t.end();
@@ -596,7 +613,7 @@ int main(const int argc, const char** argv)
 			{
 				for (int i = 0; i < ret_32s.cols; i++)
 				{
-					//XXXX
+					ret_32s.data[j*ret_32s.cols+i] = x_32s.data[j*ret_32s.cols+i] * 0.5;
 				}
 			}
 			t.end();
@@ -612,7 +629,7 @@ int main(const int argc, const char** argv)
 			{
 				for (int i = 0; i < ret_32s.cols; i++)
 				{
-					//XXXX
+					ret_32s.data[j*ret_32s.cols+i] = x_32s.data[j*ret_32s.cols+i] >> 1;
 				}
 			}
 			t.end();
@@ -634,7 +651,7 @@ int main(const int argc, const char** argv)
 			{
 				for (int i = 0; i < ret_32f.cols; i++)
 				{
-					//XXXX
+					ret_32f.data[j*ret_32f.cols+i] = x_32f.data[j*ret_32f.cols+i] / 2; 
 				}
 			}
 			t.end();
@@ -650,7 +667,7 @@ int main(const int argc, const char** argv)
 			{
 				for (int i = 0; i < ret_32f.cols; i++)
 				{
-					//XXXX
+					ret_32f.data[j*ret_32f.cols+i] = x_32f.data[j*ret_32f.cols+i] * 0.5;
 				}
 			}
 			t.end();

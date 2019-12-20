@@ -3,7 +3,7 @@ OBJS=utils/mat.o utils/mat_util.o main.o
 
 CC = g++
 CXXFLAGS=-lm -std=c++0x -fopenmp -march=native -mfpmath=both
-CXXFLAGS_ST=-Og #-mtune=native
+CXXFLAGS_ST=#-O1 #-mtune=native
 
 
 
