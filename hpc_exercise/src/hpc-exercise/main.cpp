@@ -380,11 +380,12 @@ int main(const int argc, const char** argv)
 				ret = 1;
 				t.start();
 				//pow，計算
-				//ret = pow(v,i);
+				ret = pow(v,i);
+				/*
 				for (int k = 0; k < i; k++)
 				{
 					ret = ret * v;
-				}
+				}*/
 				t.end();
 				//std::cout<< "time: " << t.getLastTime() << " ms" << std::endl;
 			}
@@ -508,7 +509,7 @@ int main(const int argc, const char** argv)
 	//加えて，floatの行列で，2.0で除算する場合と0.5で乗算する場合を比較せよ．
 	//なお，浮動小数点で乗算する場合は整数の場合よりも遅い． 
 	//また，大きい行列サイズでないと，効果がでない場合がある．
-	//if (false)
+	if (false)
 	{
 		std::cout << "課題9" << std::endl;
 		const int loop = 1000;
@@ -537,6 +538,7 @@ int main(const int argc, const char** argv)
 			t.end();
 		}
 		std::cout << "2x mul: time (avg): " << t.getAvgTime() << " ms" << std::endl;
+		//ret_32s.show();
 
 		//2.0x mul
 		for (int k = 0; k < loop; k++)
@@ -547,12 +549,13 @@ int main(const int argc, const char** argv)
 			{
 				for (int i = 0; i < ret_32s.cols; i++)
 				{
-					ret_32s.data[j*ret_32s.cols+i] = x_32s.data[j*ret_32s.cols+i]*2.0;
+					ret_32s.data[j*ret_32s.cols+i] = x_32s.data[j*ret_32s.cols+i]*2.f;
 				}
 			}
 			t.end();
 		}
 		std::cout << "2x mul (double): time (avg): " << t.getAvgTime() << " ms" << std::endl;
+		//ret_32s.show();
 
 		//2x bit shift
 		for (int k = 0; k < loop; k++)
@@ -569,7 +572,7 @@ int main(const int argc, const char** argv)
 			t.end();
 		}
 		std::cout << "2x bit shift: time (avg): " << t.getAvgTime() << " ms" << std::endl;
-
+		//ret_32s.show();
 
 		//1/2 div int
 		for (int k = 0; k < loop; k++)
@@ -586,7 +589,8 @@ int main(const int argc, const char** argv)
 			t.end();
 		}
 		std::cout << "1/2 div: time (avg): " << t.getAvgTime() << " ms" << std::endl;
-		
+		//ret_32s.show();
+
 		//1/2 div float
 		for (int k = 0; k < loop; k++)
 		{
@@ -596,12 +600,13 @@ int main(const int argc, const char** argv)
 			{
 				for (int i = 0; i < ret_32s.cols; i++)
 				{
-					ret_32s.data[j*ret_32s.cols+i] = x_32s.data[j*ret_32s.cols+i] / 0.5;
+					ret_32s.data[j*ret_32s.cols+i] = x_32s.data[j*ret_32s.cols+i] / 2.f;
 				}
 			}
 			t.end();
 		}
 		std::cout << "1/2 div (float): time (avg): " << t.getAvgTime() << " ms" << std::endl;
+		//ret_32s.show();
 
 
 		//1/2 -> mul 0.5
@@ -619,6 +624,7 @@ int main(const int argc, const char** argv)
 			t.end();
 		}
 		std::cout << "1/2 mul: time (avg): " << t.getAvgTime() << " ms" << std::endl;
+		//ret_32s.show();
 
 		//1/2->bit shift
 		for (int k = 0; k < loop; k++)
@@ -635,6 +641,7 @@ int main(const int argc, const char** argv)
 			t.end();
 		}
 		std::cout << "1/2 bit shift: time (avg): " << t.getAvgTime() << " ms" << std::endl;
+		//ret_32s.show();
 
 		//float
 		Mat_32F x_32f(row, col);
@@ -651,12 +658,13 @@ int main(const int argc, const char** argv)
 			{
 				for (int i = 0; i < ret_32f.cols; i++)
 				{
-					ret_32f.data[j*ret_32f.cols+i] = x_32f.data[j*ret_32f.cols+i] / 2; 
+					ret_32f.data[j*ret_32f.cols+i] = x_32f.data[j*ret_32f.cols+i] / 2.0; 
 				}
 			}
 			t.end();
 		}
 		std::cout << "float: 1/2 div: time (avg): " << t.getAvgTime() << " ms" << std::endl;
+		//ret_32f.show();
 
 		//1/2 -> mul 0.5
 		for (int k = 0; k < loop; k++)
@@ -673,7 +681,7 @@ int main(const int argc, const char** argv)
 			t.end();
 		}
 		std::cout << "float: 1/2 mul: time (avg): " << t.getAvgTime() << " ms" << std::endl;
-
+		//ret_32f.show();
 		return 0;
 	}
 
@@ -700,12 +708,13 @@ int main(const int argc, const char** argv)
 			{
 				for (int i = 0; i < ret_32s.cols; i++)
 				{
-					//XXXX
+					ret_32s.data[j*ret_32s.cols+i] = (x_32s.data[j*ret_32s.cols+i]*3216) >> 10;
 				}
 			}
 			t.end();
 		}
 		std::cout << "fixed: time (avg): " << t.getAvgTime() << " ms" << std::endl;
+		ret_32s.show();
 
 		Mat_32F x_32f(row, col);
 		mat_rand(x_32f, 0, 100);
@@ -721,12 +730,13 @@ int main(const int argc, const char** argv)
 			{
 				for (int i = 0; i < ret_32f.cols; i++)
 				{
-					//XXXX
+					ret_32f.data[j*ret_32f.cols+i] = x_32f.data[j*ret_32f.cols+i] * 3.141;
 				}
 			}
 			t.end();
 		}
 		std::cout << "float: time (avg): " << t.getAvgTime() << " ms" << std::endl;
+		ret_32f.show();
 
 		return 0;
 	}
@@ -758,12 +768,14 @@ int main(const int argc, const char** argv)
 			{
 				for (int i = 0; i < ret_32f.cols; i++)
 				{
-					//XXXX
+					ret_32f.data[j*ret_32f.cols+i] = x_32f.data[j*ret_32f.cols+i] * 3.141;
 				}
 			}
 			t.end();
 		}
 		std::cout << "arithmetic: time (avg): " << t.getAvgTime() << " ms" << std::endl;
+
+		//ret_32f.show();
 
 		//sin
 		for (int k = 0; k < loop; k++)
@@ -774,12 +786,13 @@ int main(const int argc, const char** argv)
 			{
 				for (int i = 0; i < ret_32f.cols; i++)
 				{
-					//XXXX
+					ret_32f.data[j*ret_32f.cols+i] = sin(x_32f.data[j*ret_32f.cols+i]);
 				}
 			}
 			t.end();
 		}
 		std::cout << "sin: time (avg): " << t.getAvgTime() << " ms" << std::endl;
+		//ret_32f.show();
 
 		//cos
 		for (int k = 0; k < loop; k++)
@@ -790,12 +803,13 @@ int main(const int argc, const char** argv)
 			{
 				for (int i = 0; i < ret_32f.cols; i++)
 				{
-					//XXXX
+					ret_32f.data[j*ret_32f.cols+i] = cos(x_32f.data[j*ret_32f.cols+i]);
 				}
 			}
 			t.end();
 		}
 		std::cout << "cos: time (avg): " << t.getAvgTime() << " ms" << std::endl;
+		//ret_32f.show();
 
 		//exp
 		for (int k = 0; k < loop; k++)
@@ -806,12 +820,13 @@ int main(const int argc, const char** argv)
 			{
 				for (int i = 0; i < ret_32f.cols; i++)
 				{
-					//XXXX
+					ret_32f.data[j*ret_32f.cols+i] = exp(x_32f.data[j*ret_32f.cols+i]);
 				}
 			}
 			t.end();
 		}
 		std::cout << "exp: time (avg): " << t.getAvgTime() << " ms" << std::endl;
+		//ret_32f.show();
 
 		//log
 		for (int k = 0; k < loop; k++)
@@ -822,12 +837,13 @@ int main(const int argc, const char** argv)
 			{
 				for (int i = 0; i < ret_32f.cols; i++)
 				{
-					//XXXX
+					ret_32f.data[j*ret_32f.cols+i] = log(x_32f.data[j*ret_32f.cols+i]);
 				}
 			}
 			t.end();
 		}
 		std::cout << "log: time (avg): " << t.getAvgTime() << " ms" << std::endl;
+		//ret_32f.show();
 
 		//sqrt
 		for (int k = 0; k < loop; k++)
@@ -838,12 +854,13 @@ int main(const int argc, const char** argv)
 			{
 				for (int i = 0; i < ret_32f.cols; i++)
 				{
-					//XXXX
+					ret_32f.data[j*ret_32f.cols+i] = sqrt(x_32f.data[j*ret_32f.cols+i]);
 				}
 			}
 			t.end();
 		}
 		std::cout << "sqrt: time (avg): " << t.getAvgTime() << " ms" << std::endl;
+		//ret_32f.show();
 
 		std::cout << std::endl;
 		//sin LUT
@@ -851,7 +868,7 @@ int main(const int argc, const char** argv)
 		for (int i = 0; i < 256; i++)
 		{
 			//LUT作成
-			//XXXX
+			LUT[i] = sin(i);
 		}
 		for (int k = 0; k < loop; k++)
 		{
@@ -867,12 +884,13 @@ int main(const int argc, const char** argv)
 			t.end();
 		}
 		std::cout << "sin LUT: time (avg): " << t.getAvgTime() << " ms" << std::endl;
+		//ret_32f.show();
 
 		//cos LUT
 		for (int i = 0; i < 256; i++)
 		{
 			//LUT作成
-			//XXXX
+			LUT[i] = cos(i);
 		}
 		for (int k = 0; k < loop; k++)
 		{
@@ -882,18 +900,19 @@ int main(const int argc, const char** argv)
 			{
 				for (int i = 0; i < ret_32f.cols; i++)
 				{
-					//XXXX
+					ret_32f.data[j*ret_32f.cols + i] = LUT[(int)x_32f.data[j*ret_32f.cols + i]];
 				}
 			}
 			t.end();
 		}
 		std::cout << "cos LUT: time (avg): " << t.getAvgTime() << " ms" << std::endl;
+		//ret_32f.show();
 
 		//exp LUT
 		for (int i = 0; i < 256; i++)
 		{
 			//LUT作成
-			//XXXX
+			LUT[i] = exp(i);
 		}
 		for (int k = 0; k < loop; k++)
 		{
@@ -903,18 +922,19 @@ int main(const int argc, const char** argv)
 			{
 				for (int i = 0; i < ret_32f.cols; i++)
 				{
-					//XXXX
+					ret_32f.data[j*ret_32f.cols + i] = LUT[(int)x_32f.data[j*ret_32f.cols + i]];
 				}
 			}
 			t.end();
 		}
 		std::cout << "exp LUT: time (avg): " << t.getAvgTime() << " ms" << std::endl;
+		//ret_32f.show();
 
 		//log LUT
 		for (int i = 0; i < 256; i++)
 		{
 			//LUT作成
-			//XXXX
+			LUT[i] = log(i);
 		}
 		for (int k = 0; k < loop; k++)
 		{
@@ -924,18 +944,19 @@ int main(const int argc, const char** argv)
 			{
 				for (int i = 0; i < ret_32f.cols; i++)
 				{
-					//XXXX
+					ret_32f.data[j*ret_32f.cols + i] = LUT[(int)x_32f.data[j*ret_32f.cols + i]];
 				}
 			}
 			t.end();
 		}
 		std::cout << "log LUT: time (avg): " << t.getAvgTime() << " ms" << std::endl;
+		//ret_32f.show();
 
 		//sqrt LUT
 		for (int i = 0; i < 256; i++)
 		{
 			//LUT作成
-			//XXXX
+			LUT[i] = sqrt(i);
 		}
 		for (int k = 0; k < loop; k++)
 		{
@@ -945,16 +966,18 @@ int main(const int argc, const char** argv)
 			{
 				for (int i = 0; i < ret_32f.cols; i++)
 				{
-					//XXXX
+					ret_32f.data[j*ret_32f.cols + i] = LUT[(int)x_32f.data[j*ret_32f.cols + i]];
 				}
 			}
 			t.end();
 		}
 		std::cout << "sqrt LUT: time (avg): " << t.getAvgTime() << " ms" << std::endl;
+		//ret_32f.show();
 
 		return 0;
 	}
 
+/*進捗*/
 
 	//課題12
 	//小さな行列A,Bの各要素を任意のradianだけ回転させて，x,yにして格納するプログラムを記述し，inline展開の有無で速度がどのように変わるか計測せよ．
@@ -965,7 +988,7 @@ int main(const int argc, const char** argv)
 	//	x = a * cos(radian);
 	//	y = b * sin(radian);
 	//}
-	if (false)
+	//if (false)
 	{
 		std::cout << "課題12" << std::endl;
 		const int loop = 10000;

@@ -33,11 +33,376 @@ t.getAvgTime(true)
 -Os time (avg): time (avg): 0.00294089 ms
 -Og time (avg): 0.00275278 ms
 
+課題3
+before: time: 0.068991 ms
+before: time: 0.004939 ms
+before: time: 0.004562 ms
+before: time: 0.004454 ms
+before: time: 0.004359 ms
+before: time: 0.004344 ms
+before: time: 0.004277 ms
+before: time: 0.00431 ms
+before: time: 0.004323 ms
+before: time: 0.004277 ms
+before: time (avg): 0.00442722 ms
+[ 3 x 3 ] 32F
+1.57398e+08, 7.7419e+06, 1.18886e+08, 
+1.28448e+08, 2.17974e+08, 499307, 
+4.05866e+06, 1.10137e+08, 1.92481e+06, 
+after: time: 0.003149 ms
+after: time: 0.002611 ms
+after: time: 0.002395 ms
+after: time: 0.002384 ms
+after: time: 0.002298 ms
+after: time: 0.002333 ms
+after: time: 0.002603 ms
+after: time: 0.002293 ms
+after: time: 0.002357 ms
+after: time: 0.002401 ms
+after: time (avg): 0.00240833 ms
+[ 3 x 3 ] 32F
+1.57398e+08, 7.7419e+06, 1.18886e+08, 
+1.28448e+08, 2.17974e+08, 499307, 
+4.05866e+06, 1.10137e+08, 1.92481e+06, 
+明らかに早くなっている
+
+課題4
+before: time: 0.000708 ms
+before: time: 0.00035 ms
+before: time: 0.000251 ms
+before: time: 0.000263 ms
+before: time: 0.000222 ms
+before: time: 0.000233 ms
+before: time: 0.000234 ms
+before: time: 0.000225 ms
+before: time: 0.000255 ms
+before: time: 0.000243 ms
+before: time (avg): 0.000252889 ms
+[ 3 x 3 ] 32F
+782.939, 367.511, 729.741, 
+744.036, 849.53, 184.091, 
+312.381, 715.884, 258.848, 
+after: time: 0.000546 ms
+after: time: 0.011883 ms
+after: time: 0.00025 ms
+after: time: 0.000209 ms
+after: time: 0.000224 ms
+after: time: 0.000214 ms
+after: time: 0.000206 ms
+after: time: 0.000223 ms
+after: time: 0.000204 ms
+after: time: 0.00023 ms
+after: time (avg): 0.00151589 ms
+[ 3 x 3 ] 32F
+782.939, 367.511, 729.741, 
+744.036, 849.53, 184.091, 
+312.381, 715.884, 258.848, 
+
+課題5
+div: time: 0.000679 ms
+div: time: 0.000296 ms
+div: time: 0.00025 ms
+div: time: 0.000265 ms
+div: time: 0.000192 ms
+div: time: 0.000193 ms
+div: time: 0.000187 ms
+div: time: 0.000188 ms
+div: time: 0.000187 ms
+div: time: 0.00019 ms
+div: time (avg): 0.000216444 ms
+[ 3 x 3 ] 32F
+27.0115, 12.6791, 25.1761, 
+25.6693, 29.3088, 6.35114, 
+10.7772, 24.698, 8.93026, 
+mul: time: 0.000487 ms
+mul: time: 0.000187 ms
+mul: time: 0.000174 ms
+mul: time: 0.000179 ms
+mul: time: 0.000177 ms
+mul: time: 0.000172 ms
+mul: time: 0.000169 ms
+mul: time: 0.00017 ms
+mul: time: 0.000171 ms
+mul: time: 0.000173 ms
+mul: time (avg): 0.000174667 ms
+[ 3 x 3 ] 32F
+27.0115, 12.6791, 25.1761, 
+25.6693, 29.3088, 6.35114, 
+10.7772, 24.698, 8.93026, 
+
+課題6
+before: time: 0.000761 ms
+before: time: 0.000487 ms
+before: time: 0.000348 ms
+before: time: 0.000303 ms
+before: time: 0.00027 ms
+before: time: 0.000291 ms
+before: time: 0.000365 ms
+before: time: 0.000277 ms
+before: time: 0.000281 ms
+before: time: 0.000272 ms
+before: time (avg): 0.000321556 ms
+[ 3 x 3 ] 32F
+1.97377, 0.501963, 0.0930015, 
+1.03645, 0.290405, 0.272323, 
+0.19365, 0.759975, 0.0958666, 
+after: time: 0.000566 ms
+after: time: 0.000331 ms
+after: time: 0.000304 ms
+after: time: 0.000277 ms
+after: time: 0.000276 ms
+after: time: 0.000275 ms
+after: time: 0.000281 ms
+after: time: 0.000279 ms
+after: time: 0.000277 ms
+after: time: 0.000275 ms
+after: time (avg): 0.000286111 ms
+[ 3 x 3 ] 32F
+1.97377, 0.501964, 0.0930016, 
+1.03645, 0.290405, 0.272323, 
+0.19365, 0.759975, 0.0958666, 
+
+
 課題7
+		const int loop = 1000;
+		const int n = 50;
+		const float v = 2.5f;
+		float ret = 1;
 pow関数はほぼ変化がない。
+pow
+3 : time (avg): 0.000325663 ms
+15.625
+4 : time (avg): 0.000324901 ms
+39.0625
+5 : time (avg): 0.000326357 ms
+97.6562
+6 : time (avg): 0.000248374 ms
+244.141
+7 : time (avg): 0.000104681 ms
+610.352
+8 : time (avg): 9.36026e-05 ms
+1525.88
+9 : time (avg): 9.17417e-05 ms
+3814.7
+10 : time (avg): 7.90761e-05 ms
+9536.74
+11 : time (avg): 7.92813e-05 ms
+23841.9
+12 : time (avg): 7.92553e-05 ms
+59604.6
+13 : time (avg): 7.91051e-05 ms
+149012
+14 : time (avg): 8.31742e-05 ms
+372529
+15 : time (avg): 8.1983e-05 ms
+931323
+16 : time (avg): 0.000114955 ms
+2.32831e+06
+17 : time (avg): 7.90931e-05 ms
+5.82077e+06
+18 : time (avg): 7.92543e-05 ms
+1.45519e+07
+19 : time (avg): 7.91932e-05 ms
+3.63798e+07
+20 : time (avg): 7.94004e-05 ms
+9.09495e+07
+21 : time (avg): 7.90781e-05 ms
+2.27374e+08
+22 : time (avg): 9.44064e-05 ms
+5.68434e+08
+23 : time (avg): 0.000191463 ms
+1.42109e+09
+24 : time (avg): 0.000104474 ms
+3.55271e+09
+25 : time (avg): 8.38048e-05 ms
+8.88178e+09
+26 : time (avg): 8.37708e-05 ms
+2.22045e+10
+27 : time (avg): 8.37387e-05 ms
+5.55112e+10
+28 : time (avg): 8.56126e-05 ms
+1.38778e+11
+29 : time (avg): 8.37327e-05 ms
+3.46945e+11
+30 : time (avg): 8.35716e-05 ms
+8.67362e+11
+31 : time (avg): 8.36446e-05 ms
+2.1684e+12
+32 : time (avg): 8.36376e-05 ms
+5.42101e+12
+33 : time (avg): 8.38589e-05 ms
+1.35525e+13
+34 : time (avg): 8.65245e-05 ms
+3.38813e+13
+35 : time (avg): 8.35866e-05 ms
+8.47033e+13
+36 : time (avg): 8.37968e-05 ms
+2.11758e+14
+37 : time (avg): 8.34605e-05 ms
+5.29396e+14
+38 : time (avg): 8.37457e-05 ms
+1.32349e+15
+39 : time (avg): 8.36827e-05 ms
+3.30872e+15
+40 : time (avg): 8.37327e-05 ms
+8.27181e+15
+41 : time (avg): 8.56817e-05 ms
+2.06795e+16
+42 : time (avg): 8.35465e-05 ms
+5.16988e+16
+43 : time (avg): 8.36046e-05 ms
+1.29247e+17
+44 : time (avg): 9.14815e-05 ms
+3.23117e+17
+45 : time (avg): 7.92773e-05 ms
+8.07794e+17
+46 : time (avg): 7.92002e-05 ms
+2.01948e+18
+47 : time (avg): 9.37988e-05 ms
+5.04871e+18
+48 : time (avg): 7.91411e-05 ms
+1.26218e+19
+49 : time (avg): 7.92312e-05 ms
+3.15544e+19
 for文を使うと、途中までおちて上がる
+課題7
+3 : time (avg): 8.78969e-05 ms
+15.625
+4 : time (avg): 0.00010006 ms
+39.0625
+5 : time (avg): 0.000139157 ms
+97.6562
+6 : time (avg): 0.000189097 ms
+244.141
+7 : time (avg): 3.69359e-05 ms
+610.352
+8 : time (avg): 9.52683e-05 ms
+1525.88
+9 : time (avg): 3.69219e-05 ms
+3814.7
+10 : time (avg): 3.89029e-05 ms
+9536.74
+11 : time (avg): 4.16296e-05 ms
+23841.9
+12 : time (avg): 4.3985e-05 ms
+59604.6
+13 : time (avg): 5.70641e-05 ms
+149012
+14 : time (avg): 4.88979e-05 ms
+372529
+15 : time (avg): 5.14004e-05 ms
+931323
+16 : time (avg): 0.000106157 ms
+2.32831e+06
+17 : time (avg): 5.55465e-05 ms
+5.82077e+06
+18 : time (avg): 9.05636e-05 ms
+1.45519e+07
+19 : time (avg): 7.6008e-05 ms
+3.63798e+07
+20 : time (avg): 6.41381e-05 ms
+9.09495e+07
+21 : time (avg): 6.76607e-05 ms
+2.27374e+08
+22 : time (avg): 7.83423e-05 ms
+5.68434e+08
+23 : time (avg): 8.99279e-05 ms
+1.42109e+09
+24 : time (avg): 8.08729e-05 ms
+3.55271e+09
+25 : time (avg): 9.21502e-05 ms
+8.88178e+09
+26 : time (avg): 9.73213e-05 ms
+2.22045e+10
+27 : time (avg): 8.88919e-05 ms
+5.55112e+10
+28 : time (avg): 9.40831e-05 ms
+1.38778e+11
+29 : time (avg): 0.000103122 ms
+3.46945e+11
+30 : time (avg): 0.000108134 ms
+8.67362e+11
+31 : time (avg): 0.000105656 ms
+2.1684e+12
+32 : time (avg): 0.000102351 ms
+5.42101e+12
+33 : time (avg): 0.000116418 ms
+1.35525e+13
+34 : time (avg): 0.00011672 ms
+3.38813e+13
+35 : time (avg): 0.000110625 ms
+8.47033e+13
+36 : time (avg): 0.000129454 ms
+2.11758e+14
+37 : time (avg): 0.000115771 ms
+5.29396e+14
+38 : time (avg): 0.000129354 ms
+1.32349e+15
+39 : time (avg): 0.000121493 ms
+3.30872e+15
+40 : time (avg): 0.000139967 ms
+8.27181e+15
+41 : time (avg): 0.000126498 ms
+2.06795e+16
+42 : time (avg): 0.000140282 ms
+5.16988e+16
+43 : time (avg): 0.000151931 ms
+1.29247e+17
+44 : time (avg): 0.000145988 ms
+3.23117e+17
+45 : time (avg): 0.000148066 ms
+8.07794e+17
+46 : time (avg): 0.000156107 ms
+2.01948e+18
+47 : time (avg): 0.000153504 ms
+5.04871e+18
+48 : time (avg): 0.000148096 ms
+1.26218e+19
+49 : time (avg): 0.000165292 ms
+3.15544e+19
 
 課題8
 行列を128,128に変更
+課題8
+ 8U : time (avg): 0.0597774 ms
+16S : time (avg): 0.0615332 ms
+32S : time (avg): 0.093627 ms
+32F : time (avg): 0.0959811 ms
+64F : time (avg): 0.15743 ms
 
 課題9
+2x mul: time (avg): 0.0061113 ms
+2x mul (double): time (avg): 0.00622478 ms
+2x bit shift: time (avg): 0.00523009 ms
+1/2 div: time (avg): 0.00565279 ms
+1/2 div (float): time (avg): 0.0111024 ms
+1/2 mul: time (avg): 0.00611433 ms
+1/2 bit shift: time (avg): 0.00521863 ms
+float: 1/2 div: time (avg): 0.0056812 ms
+float: 1/2 mul: time (avg): 0.00560428 ms
+
+課題10
+fixed: time (avg): 0.000161673 ms
+[ 3 x 3 ] 32S
+263, 122, 248, 
+251, 288, 59, 
+103, 241, 87, 
+float: time (avg): 0.000229442 ms
+[ 3 x 3 ] 32F
+175.742, 151.45, 199.504, 
+115.725, 162.872, 302.086, 
+290.655, 201.674, 227.556, 
+
+課題11
+arithmetic: time (avg): 0.0153206 ms
+sin: time (avg): 0.0813479 ms
+cos: time (avg): 0.0817471 ms
+exp: time (avg): 0.0415817 ms
+log: time (avg): 0.0647626 ms
+sqrt: time (avg): 0.00864338 ms
+
+sin LUT: time (avg): 0.00638844 ms
+cos LUT: time (avg): 0.00593529 ms
+exp LUT: time (avg): 0.00604634 ms
+log LUT: time (avg): 0.00631569 ms
+sqrt LUT: time (avg): 0.00599926 ms
