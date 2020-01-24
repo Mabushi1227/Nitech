@@ -181,7 +181,7 @@ int main(const int argc, const char** argv)
 	//課題4
 	//小さな行列に対して，各要素を下記の定数倍するプログラムを作成し，数式の展開前後で計算速度を比較せよ．
 	//(2π+sqrt(5)+0.5^2)x
-	if (false)
+	//if (false)
 	{
 		std::cout << "課題4" << std::endl;
 		const int loop = 10;
@@ -746,7 +746,7 @@ int main(const int argc, const char** argv)
 	//floatの行列への定数値の四則演算と，`sin, cos, exp, log, sqrt`関数の適用した場合と計算時間を比較せよ．
 	//また，`sin, cos, exp, log, sqrt`計算はテーブル参照も作成した場合についても比較せよ．
 	//なお，環境によっては，演算したほうが速い演算もある可能性がある．
-	//if (false)
+	if (false)
 	{
 		std::cout << "課題11" << std::endl;
 		const int loop = 100;

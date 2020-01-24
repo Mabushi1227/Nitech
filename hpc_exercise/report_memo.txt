@@ -67,6 +67,39 @@ after: time (avg): 0.00239822 ms
 
 明らかに早くなっている
 
+課題4
+before: time: 0.000762 ms
+before: time: 0.000339 ms
+before: time: 0.000291 ms
+before: time: 0.000211 ms
+before: time: 0.000239 ms
+before: time: 0.000226 ms
+before: time: 0.000215 ms
+before: time: 0.000289 ms
+before: time: 0.000235 ms
+before: time: 0.00023 ms
+before: time (avg): 0.000252778 ms
+[ 3 x 3 ] 32F
+782.939, 367.511, 729.741, 
+744.036, 849.53, 184.091, 
+312.381, 715.884, 258.848, 
+after: time: 0.00048 ms
+after: time: 0.000372 ms
+after: time: 0.000235 ms
+after: time: 0.000182 ms
+after: time: 0.000187 ms
+after: time: 0.000185 ms
+after: time: 0.000179 ms
+after: time: 0.000187 ms
+after: time: 0.000188 ms
+after: time: 0.000211 ms
+after: time (avg): 0.000214 ms
+[ 3 x 3 ] 32F
+782.939, 367.511, 729.741, 
+744.036, 849.53, 184.091, 
+312.381, 715.884, 258.848, 
+
+
 課題5
 div: time: 0.000827 ms
 div: time: 0.000374 ms
