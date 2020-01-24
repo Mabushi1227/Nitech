@@ -5,7 +5,7 @@
 
 
 //課題12
-inline void rot(double a, double b, double &x, double &y, double radian)
+inline void __attribute__((always_inline)) rot(double a, double b, double &x, double &y, double radian)
 {
 	x = a * cos(radian);
 	y = b * sin(radian);
@@ -181,7 +181,7 @@ int main(const int argc, const char** argv)
 	//課題4
 	//小さな行列に対して，各要素を下記の定数倍するプログラムを作成し，数式の展開前後で計算速度を比較せよ．
 	//(2π+sqrt(5)+0.5^2)x
-	//if (false)
+	if (false)
 	{
 		std::cout << "課題4" << std::endl;
 		const int loop = 10;
@@ -978,17 +978,15 @@ int main(const int argc, const char** argv)
 		return 0;
 	}
 
-/*進捗*/
-
 	//課題12
 	//小さな行列A,Bの各要素を任意のradianだけ回転させて，x,yにして格納するプログラムを記述し，inline展開の有無で速度がどのように変わるか計測せよ．
 	//また，関数をべた書きした場合とも比較せよ．
 	//ただし，-O3のオプションを付けると強制的にinline展開される可能性がある．
-	//inline void rot(double a, double b, double &x, double &y, double radian)
-	//{
-	//	x = a * cos(radian);
-	//	y = b * sin(radian);
-	//}
+//	inline void rot(double a, double b, double &x, double &y, double radian)
+//	{
+//		x = a * cos(radian);
+//		y = b * sin(radian);
+//	}
 	if (false)
 	{
 		std::cout << "課題12" << std::endl;
@@ -1014,8 +1012,14 @@ int main(const int argc, const char** argv)
 			{
 				for (int i = 0; i < a.cols; i++)
 				{
-					//rot
-					//XXXX
+					//rotべた書き
+					/*
+					x.data[j*x.cols + i] = a.data[j*a.cols + i] * cos(radian);
+					y.data[j*y.cols + i] = b.data[j*a.cols + i] * cos(radian);
+					*/
+					//rotインライン呼び出し
+					rot(a.data[j*x.cols + i],b.data[j*x.cols + i],x.data[j*x.cols + i],y.data[j*x.cols + i],radian);
+	
 				}
 			}
 			t.end();
@@ -1050,12 +1054,14 @@ int main(const int argc, const char** argv)
 				{
 					for (int i = 0; i < a.cols; i++)
 					{
-						//XXXX
+						c.data[j*a.cols + i] = a.data[j*a.cols + i] * b.data[j*a.cols + i]; 
 					}
 				}
 				t.end();
+				//c.show();
 			}
 			std::cout << "c=a*b: time (avg): " << t.getAvgTime() << " ms" << std::endl;
+			
 		}
 
 		//a = a x b
@@ -1074,12 +1080,14 @@ int main(const int argc, const char** argv)
 				{
 					for (int i = 0; i < a.cols; i++)
 					{
-						//XXXX
+						a.data[j*a.cols + i] = a.data[j*a.cols + i] * b.data[j*a.cols + i]; 
 					}
 				}
 				t.end();
+				//a.show();
 			}
 			std::cout << "a=a*b: time (avg): " << t.getAvgTime() << " ms" << std::endl;
+			
 		}
 
 		return 0;
@@ -1171,7 +1179,7 @@ int main(const int argc, const char** argv)
 				{
 					for (int j = 0; j < size; ++j)
 					{
-						//XXXX
+						c[i][j] = c[i][j] + a[i][k] * b[k][j];
 					}
 				}
 			}
@@ -1190,7 +1198,7 @@ int main(const int argc, const char** argv)
 				{
 					for (int k = 0; k < size; ++k)
 					{
-						//XXXX
+						c[i][j] = c[i][j] + a[i][k] * b[k][j];
 					}
 				}
 			}
@@ -1209,7 +1217,7 @@ int main(const int argc, const char** argv)
 				{
 					for (int i = 0; i < size; ++i)
 					{
-						//XXXX
+						c[i][j] = c[i][j] + a[i][k] * b[k][j];
 					}
 				}
 			}
@@ -1228,7 +1236,7 @@ int main(const int argc, const char** argv)
 				{
 					for (int j = 0; j < size; ++j)
 					{
-						//XXXX
+						c[i][j] = c[i][j] + a[i][k] * b[k][j];
 					}
 				}
 			}
@@ -1247,7 +1255,7 @@ int main(const int argc, const char** argv)
 				{
 					for (int i = 0; i < size; ++i)
 					{
-						//XXXX
+						c[i][j] = c[i][j] + a[i][k] * b[k][j];
 					}
 				}
 			}
@@ -1297,8 +1305,8 @@ int main(const int argc, const char** argv)
 			t.start();
 			for (int i = 0; i < size; i += 2)
 			{
-				//XXXX
-				//XXXX
+				y[i + 0] = a * x[i + 0] + b;
+				y[i + 1] = a * x[i + 1] + b;
 			}
 			t.end();
 		}
@@ -1311,10 +1319,10 @@ int main(const int argc, const char** argv)
 			t.start();
 			for (int i = 0; i < size; i += 4)
 			{
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
+				y[i + 0] = a * x[i + 0] + b;
+				y[i + 1] = a * x[i + 1] + b;
+				y[i + 2] = a * x[i + 2] + b;
+				y[i + 3] = a * x[i + 3] + b;
 			}
 			t.end();
 		}
@@ -1327,14 +1335,14 @@ int main(const int argc, const char** argv)
 			t.start();
 			for (int i = 0; i < size; i += 8)
 			{
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
+				y[i + 0] = a * x[i + 0] + b;
+				y[i + 1] = a * x[i + 1] + b;
+				y[i + 2] = a * x[i + 2] + b;
+				y[i + 3] = a * x[i + 3] + b;
+				y[i + 4] = a * x[i + 4] + b;
+				y[i + 5] = a * x[i + 5] + b;
+				y[i + 6] = a * x[i + 6] + b;
+				y[i + 7] = a * x[i + 7] + b;
 			}
 			t.end();
 		}
@@ -1347,22 +1355,22 @@ int main(const int argc, const char** argv)
 			t.start();
 			for (int i = 0; i < size; i += 16)
 			{
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
+				y[i + 0] = a * x[i + 0] + b;
+				y[i + 1] = a * x[i + 1] + b;
+				y[i + 2] = a * x[i + 2] + b;
+				y[i + 3] = a * x[i + 3] + b;
+				y[i + 4] = a * x[i + 4] + b;
+				y[i + 5] = a * x[i + 5] + b;
+				y[i + 6] = a * x[i + 6] + b;
+				y[i + 7] = a * x[i + 7] + b;
+				y[i + 8] = a * x[i + 8] + b;
+				y[i + 9] = a * x[i + 9] + b;
+				y[i + 10] = a * x[i + 10] + b;
+				y[i + 11] = a * x[i + 11] + b;
+				y[i + 12] = a * x[i + 12] + b;
+				y[i + 13] = a * x[i + 13] + b;
+				y[i + 14] = a * x[i + 14] + b;
+				y[i + 15] = a * x[i + 15] + b;
 			}
 			t.end();
 		}
@@ -1375,38 +1383,38 @@ int main(const int argc, const char** argv)
 			t.start();
 			for (int i = 0; i < size; i += 32)
 			{
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
+				y[i + 0] = a * x[i + 0] + b;
+				y[i + 1] = a * x[i + 1] + b;
+				y[i + 2] = a * x[i + 2] + b;
+				y[i + 3] = a * x[i + 3] + b;
+				y[i + 4] = a * x[i + 4] + b;
+				y[i + 5] = a * x[i + 5] + b;
+				y[i + 6] = a * x[i + 6] + b;
+				y[i + 7] = a * x[i + 7] + b;
+				y[i + 8] = a * x[i + 8] + b;
+				y[i + 9] = a * x[i + 9] + b;
+				y[i + 10] = a * x[i + 10] + b;
+				y[i + 11] = a * x[i + 11] + b;
+				y[i + 12] = a * x[i + 12] + b;
+				y[i + 13] = a * x[i + 13] + b;
+				y[i + 14] = a * x[i + 14] + b;
+				y[i + 15] = a * x[i + 15] + b;
+				y[i + 16] = a * x[i + 16] + b;
+				y[i + 17] = a * x[i + 17] + b;
+				y[i + 18] = a * x[i + 18] + b;
+				y[i + 19] = a * x[i + 19] + b;
+				y[i + 20] = a * x[i + 20] + b;
+				y[i + 21] = a * x[i + 21] + b;
+				y[i + 22] = a * x[i + 22] + b;
+				y[i + 23] = a * x[i + 23] + b;
+				y[i + 24] = a * x[i + 24] + b;
+				y[i + 25] = a * x[i + 25] + b;
+				y[i + 26] = a * x[i + 26] + b;
+				y[i + 27] = a * x[i + 27] + b;
+				y[i + 28] = a * x[i + 28] + b;
+				y[i + 29] = a * x[i + 29] + b;
+				y[i + 30] = a * x[i + 30] + b;
+				y[i + 31] = a * x[i + 31] + b;
 			}
 			t.end();
 		}
@@ -1419,70 +1427,70 @@ int main(const int argc, const char** argv)
 			t.start();
 			for (int i = 0; i < size; i += 64)
 			{
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
+				y[i + 0] = a * x[i + 0] + b;
+				y[i + 1] = a * x[i + 1] + b;
+				y[i + 2] = a * x[i + 2] + b;
+				y[i + 3] = a * x[i + 3] + b;
+				y[i + 4] = a * x[i + 4] + b;
+				y[i + 5] = a * x[i + 5] + b;
+				y[i + 6] = a * x[i + 6] + b;
+				y[i + 7] = a * x[i + 7] + b;
+				y[i + 8] = a * x[i + 8] + b;
+				y[i + 9] = a * x[i + 9] + b;
+				y[i + 10] = a * x[i + 10] + b;
+				y[i + 11] = a * x[i + 11] + b;
+				y[i + 12] = a * x[i + 12] + b;
+				y[i + 13] = a * x[i + 13] + b;
+				y[i + 14] = a * x[i + 14] + b;
+				y[i + 15] = a * x[i + 15] + b;
+				y[i + 16] = a * x[i + 16] + b;
+				y[i + 17] = a * x[i + 17] + b;
+				y[i + 18] = a * x[i + 18] + b;
+				y[i + 19] = a * x[i + 19] + b;
+				y[i + 20] = a * x[i + 20] + b;
+				y[i + 21] = a * x[i + 21] + b;
+				y[i + 22] = a * x[i + 22] + b;
+				y[i + 23] = a * x[i + 23] + b;
+				y[i + 24] = a * x[i + 24] + b;
+				y[i + 25] = a * x[i + 25] + b;
+				y[i + 26] = a * x[i + 26] + b;
+				y[i + 27] = a * x[i + 27] + b;
+				y[i + 28] = a * x[i + 28] + b;
+				y[i + 29] = a * x[i + 29] + b;
+				y[i + 30] = a * x[i + 30] + b;
+				y[i + 31] = a * x[i + 31] + b;				
+				y[i + 32] = a * x[i + 32] + b;
+				y[i + 33] = a * x[i + 33] + b;
+				y[i + 34] = a * x[i + 34] + b;
+				y[i + 35] = a * x[i + 35] + b;
+				y[i + 36] = a * x[i + 36] + b;
+				y[i + 37] = a * x[i + 37] + b;
+				y[i + 38] = a * x[i + 38] + b;
+				y[i + 39] = a * x[i + 39] + b;
+				y[i + 40] = a * x[i + 40] + b;
+				y[i + 41] = a * x[i + 41] + b;
+				y[i + 42] = a * x[i + 42] + b;
+				y[i + 43] = a * x[i + 43] + b;
+				y[i + 44] = a * x[i + 44] + b;
+				y[i + 45] = a * x[i + 45] + b;
+				y[i + 46] = a * x[i + 46] + b;
+				y[i + 47] = a * x[i + 47] + b;
+				y[i + 48] = a * x[i + 48] + b;
+				y[i + 49] = a * x[i + 49] + b;
+				y[i + 50] = a * x[i + 50] + b;
+				y[i + 51] = a * x[i + 51] + b;
+				y[i + 52] = a * x[i + 52] + b;
+				y[i + 53] = a * x[i + 53] + b;
+				y[i + 54] = a * x[i + 54] + b;
+				y[i + 55] = a * x[i + 55] + b;
+				y[i + 56] = a * x[i + 56] + b;
+				y[i + 57] = a * x[i + 57] + b;
+				y[i + 58] = a * x[i + 58] + b;
+				y[i + 59] = a * x[i + 59] + b;
+				y[i + 60] = a * x[i + 60] + b;
+				y[i + 61] = a * x[i + 61] + b;
+				y[i + 62] = a * x[i + 62] + b;
+				y[i + 63] = a * x[i + 63] + b;
 			}
 			t.end();
 		}
@@ -1535,12 +1543,13 @@ int main(const int argc, const char** argv)
 		{
 			t.start();
 			{
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
-				//XXXX
+				y[0] = (x[0] + x[1]) / 2;
+				for (int i = 1; i < size-1; i++)
+				{
+					y[i] = (x[i - 1] + x[i] + x[i + 1]) / 3;
+				}
+				y[size-1] = (x[size-2] + x[size-1]) / 2;
+				
 			}
 			t.end();
 		}
@@ -1595,14 +1604,19 @@ int main(const int argc, const char** argv)
 	//課題18
 	//上記のコードを実行し，並列に動作していることを確認せよ．
 	//また，並列化を有効にする場合としない場合の計算時間を比較せよ．
-	if (false)
+	//if (false)
 	{
 		std::cout << "課題18" << std::endl;
-		//XXXX
+		CalcTime t;
 		for (int i = 0; i < 100; i++)
 		{
+			t.start();
 			std::cout << i << std::endl; //並列化したい処理
+			t.end();
 		}
+		//std::cout << "parallel: time (avg): " << t.getAvgTime() << " ms" << std::endl;
+		std::cout << "no parallel: time (avg): " << t.getAvgTime() << " ms" << std::endl;
+
 		return 0;
 	}
 

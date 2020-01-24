@@ -411,3 +411,38 @@ cos LUT: time (avg): 0.00614079 ms
 exp LUT: time (avg): 0.00652704 ms
 log LUT: time (avg): 0.00597655 ms
 sqrt LUT: time (avg): 0.00644884 ms
+
+課題12
+time (avg): 0.00014772 ms //べた書き
+time (avg): 0.00037056 ms //強制inline
+time (avg): 0.000406063 ms //inlineあり
+time (avg): 0.000424201 ms //inlineなし
+
+課題13
+c=a*b: time (avg): 0.000378725 ms
+a=a*b: time (avg): 0.000291459 ms
+
+課題14
+col-row: time (avg): 0.00888342 ms
+row-col: time (avg): 0.00787716 ms
+i-j-k: time (avg): 0.66855 ms
+i-k-j: time (avg): 0.628118 ms
+j-i-k: time (avg): 0.672657 ms
+j-k-i: time (avg): 0.65283 ms
+k-i-j: time (avg): 0.629444 ms
+k-j-i: time (avg): 0.650737 ms
+
+課題15
+no unrolling: time (avg): 0.0101422 ms
+unrolling  2: time (avg): 0.00546793 ms
+unrolling  4: time (avg): 0.0044119 ms
+unrolling  8: time (avg): 0.0013436 ms
+unrolling 16: time (avg): 0.000926495 ms
+unrolling 32: time (avg): 0.000905788 ms
+unrolling 64: time (avg): 0.000904949 ms
+
+作業量、可読性からい現実的とはいえない。
+
+課題16
+original: time (avg): 0.0118999 ms
+loop peeling: time (avg): 0.00344578 ms
