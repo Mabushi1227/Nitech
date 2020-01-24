@@ -381,6 +381,7 @@ int main(const int argc, const char** argv)
 				t.start();
 				//pow，計算
 				ret = pow(v,i);
+				
 				/*
 				for (int k = 0; k < i; k++)
 				{
@@ -708,7 +709,7 @@ int main(const int argc, const char** argv)
 			{
 				for (int i = 0; i < ret_32s.cols; i++)
 				{
-					ret_32s.data[j*ret_32s.cols+i] = (x_32s.data[j*ret_32s.cols+i]*3216) >> 10;
+					ret_32s.data[j*ret_32s.cols+i] = (3216 * x_32s.data[j*ret_32s.cols+i]) >> 10;
 				}
 			}
 			t.end();
@@ -745,7 +746,7 @@ int main(const int argc, const char** argv)
 	//floatの行列への定数値の四則演算と，`sin, cos, exp, log, sqrt`関数の適用した場合と計算時間を比較せよ．
 	//また，`sin, cos, exp, log, sqrt`計算はテーブル参照も作成した場合についても比較せよ．
 	//なお，環境によっては，演算したほうが速い演算もある可能性がある．
-	if (false)
+	//if (false)
 	{
 		std::cout << "課題11" << std::endl;
 		const int loop = 100;
@@ -988,7 +989,7 @@ int main(const int argc, const char** argv)
 	//	x = a * cos(radian);
 	//	y = b * sin(radian);
 	//}
-	//if (false)
+	if (false)
 	{
 		std::cout << "課題12" << std::endl;
 		const int loop = 10000;
