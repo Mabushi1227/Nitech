@@ -2,7 +2,7 @@ PROGRAM=hpc_exercise
 OBJS=utils/mat.o utils/mat_util.o main.o
 
 CC = g++
-CXXFLAGS=-lm -std=c++0x  -march=native -mfpmath=both #-fopenmp
+CXXFLAGS=-lm -std=c++0x  -march=native -mfpmath=both -fopenmp
 CXXFLAGS_ST=-O2 #-fopenmp #-mtune=native
 
 
