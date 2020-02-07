@@ -3,6 +3,7 @@
 #include "utils/simd_util.h"
 #include <time.h>
 #include <math.h>
+#include <unistd.h>
 
 /////////////////////////////////
 // チュートリアル
@@ -17,6 +18,26 @@ void GaussianFilter(const Image_8U& src, Image_8U& dest, const int r, const floa
 void BilateralFilter(const Image_8U& src, Image_8U& dest, const int r, const float sigma_r, const float sigma_s);
 void NonLocalMeansFilter(const Image_8U& src, Image_8U& dest, const int template_r, const int search_r, const float h);
 
+
+///////////////////////
+// ガンマ変換改良
+///////////////////////
+
+void GammaCorrectionFast(const Image_8U& src, Image_8U& dest, const float gamma)
+{
+	dest = Image_8U(src.rows, src.cols, src.channels);
+	const int cn = src.channels;
+	__m256 mg = _mm256_set1_ps(1.f / gamma);
+	__m256 m255 = _mm256_set1_ps(1.f / 255.f);
+
+	for (int y = 0; y < src.rows; y++)
+	{
+		for (int x = 0; x < src.cols*cn; x++)
+		{
+			dest.data[cn*(y*src.cols) + x] = pow((float)src.data[cn*(y*src.cols) + x] * Rv255, RvGamma)*255.0f;
+		}
+	}
+}
 
 int main(const int argc, const char** argv)
 {
@@ -57,10 +78,66 @@ int main(const int argc, const char** argv)
 	//////////////////////////////////////////////////////////////////////
 	// チュートリアル
 	//////////////////////////////////////////////////////////////////////
+	if(false)
+	{
+		Image_8U img;
+		readPXM("img/lena.ppm", img);
+		Image_8U gray;
+		cvtColorGray(img, gray);
+		writePXM("img/tutorial1.pgm", gray);
+		//display tutorial1.pgm で確認
+	}
+
+	if(false)
+	{
+		Image_8U img;
+		readPXM("img/lena_gray.pgm", img);
+		for (int i = 0; i < 50; i++)
+		{
+			for (int j = 0; j < 50; j++)
+			{
+				img.data[img.channels*(i*img.cols + j)+0] = 0;
+				img.data[img.channels*(i*img.cols + j)+1] = 0;
+				img.data[img.channels*(i*img.cols + j)+2] = 0;
+			}
+		}
+		writePXM("img/tutorial2.pgm", img);
+	}
+
+	if(false)
+	{
+		Image_8U img;
+		readPXM("img/lena.ppm", img);
+
+		for (int i = 0; i < img.cols; i++)
+		{
+			for (int j = 0; j < img.rows; j++)
+			{
+				int green = img.data[img.channels*(i*img.cols + j)+1];
+				/*
+				if(green < 128)
+				{
+					img.data[img.channels*(i*img.cols + j)+1] = green * 2;
+				}
+				else
+				{
+					img.data[img.channels*(i*img.cols + j)+1] = 255;
+				}
+				*/
+				img.data[img.channels*(i*img.cols + j)+1] = std::min(std::max(2*green,0),255);
+			}
+		}
+
+		writePXM("img/tutorial3.ppm", img);
+	}
+
+
+
+
 	///////////////////////
 	// gamma correction
 	///////////////////////
-	if (false)
+	//if (false)
 	{
 		const int loop = 10;
 
@@ -72,7 +149,8 @@ int main(const int argc, const char** argv)
 		for (int k = 0; k < loop; k++)
 		{
 			t.start();
-			GammaCorrection(src, dest, gamma);
+			//GammaCorrection(src, dest, gamma);
+			GammaCorrectionFast(src, dest, gamma);
 			t.end();
 		}
 		std::cout << "time (avg): " << t.getAvgTime() << " ms" << std::endl;

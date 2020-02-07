@@ -2029,7 +2029,7 @@ int main(const int argc, const char** argv)
 
 	//課題26
 	//上記のコードのように，SIMD命令を使う場合におけるループアンローリングを8，16，32，64と行い，計算時間を比較せよ．
-	//if (false)
+	if (false)
 	{
 		std::cout << "課題26" << std::endl;
 		const int loop = 1000;
@@ -2225,7 +2225,7 @@ int main(const int argc, const char** argv)
 		}
 
 		//転置
-//XXXX
+		_mm256_transpose_8x8_ps(mb,ma);
 
 		for (int i = 0; i < 8; i++)
 		{
@@ -2244,7 +2244,7 @@ int main(const int argc, const char** argv)
 
 		print_m256(m32f);
 		//cvtを使って
-//XXXX
+		m32f = _mm256_cvtepi32_ps(m32i);
 		print_m256(m32f);
 	}
 
@@ -2252,10 +2252,10 @@ int main(const int argc, const char** argv)
 	//課題29
 	//上記のコードを実行し，計算時間を計測せよ．
 	//また，スカラ実装，スカラ実装＋並列化，SIMD実装のみを作成し，計算時間を比較せよ．
-	if (false)
+	//if (false)
 	{
 		std::cout << "課題29" << std::endl;
-		const int loop = 1000;
+		const int loop = 10;
 		const int size = 128;
 		Mat_32F a(size, size);
 		Mat_32F b(size, size);
@@ -2275,29 +2275,31 @@ int main(const int argc, const char** argv)
 			{
 				for (int i = 0; i < size; i++)
 				{
-					//XXXX
+					c.data[j*c.cols + i] = a.data[j*a.cols + i] * b.data[j*b.cols + i]; 
 				}
 			}
 			t.end();
 		}
 		std::cout << "scalar    : time (avg): " << t.getAvgTime() << " ms" << std::endl;
+		//c.show();
+
 
 		for (int k = 0; k < loop; k++)
 		{
 			//スカラー，並列化実装
 			t.start();
-			//XXXX
+			#pragma omp parallel for
 			for (int j = 0; j < size; ++j)
 			{
 				for (int i = 0; i < size; i++)
 				{
-					//XXXX
+					c.data[j*c.cols + i] = a.data[j*a.cols + i] * b.data[j*b.cols + i]; 
 				}
 			}
 			t.end();
 		}
 		std::cout << "scalar+omp: time (avg): " << t.getAvgTime() << " ms" << std::endl;
-
+		//c.show();
 
 		for (int k = 0; k < loop; k++)
 		{
@@ -2307,35 +2309,36 @@ int main(const int argc, const char** argv)
 			{
 				for (int i = 0; i < size; i += 8)
 				{
-					//XXXX
-					//XXXX
-					//XXXX
-					//XXXX
+					__m256 ma = _mm256_load_ps(a.data+j*size+i);
+					__m256 mb = _mm256_load_ps(b.data+j*size+i);
+					__m256 temp = _mm256_mul_ps(ma, mb);
+					_mm256_store_ps(c.data + j*size+i, temp);
 				}
 			}
 			t.end();
 		}
 		std::cout << "SIMD      : time (avg): " << t.getAvgTime() << " ms" << std::endl;
-
+		//c.show();
 
 		for (int k = 0; k < loop; k++)
 		{
 			//SIMD，並列化実装
 			t.start();
-			//XXXX
+			#pragma omp parallel for
 			for (int j = 0; j < size; ++j)
 			{
 				for (int i = 0; i < size; i += 8)
 				{
-					//XXXX
-					//XXXX
-					//XXXX
-					//XXXX
+					__m256 ma = _mm256_load_ps(a.data+j*size+i);
+					__m256 mb = _mm256_load_ps(b.data+j*size+i);
+					__m256 temp = _mm256_mul_ps(ma, mb);
+					_mm256_store_ps(c.data + j*size+i, temp);
 				}
 			}
 			t.end();
 		}
 		std::cout << "SIMD+omp  : time (avg): " << t.getAvgTime() << " ms" << std::endl;
+		//c.show();
 
 		return 0;
 	}

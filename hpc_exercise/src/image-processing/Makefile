@@ -3,7 +3,7 @@ OBJS=utils/image.o utils/image_util.o main.o
 
 CC = g++
 CXXFLAGS=-lm -std=c++0x -fopenmp -march=native -mfpmath=both
-CXXFLAGS_ST=#-O3 #-mtune=native
+CXXFLAGS_ST= -O3 #-mtune=native
 
 
 .SUFFIXES: .cpp .o
