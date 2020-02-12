@@ -22,23 +22,89 @@ void NonLocalMeansFilter(const Image_8U& src, Image_8U& dest, const int template
 ///////////////////////
 // ガンマ変換改良
 ///////////////////////
-
 void GammaCorrectionFast(const Image_8U& src, Image_8U& dest, const float gamma)
 {
 	dest = Image_8U(src.rows, src.cols, src.channels);
 	const int cn = src.channels;
-	__m256 mg = _mm256_set1_ps(1.f / gamma);
-	__m256 m255 = _mm256_set1_ps(1.f / 255.f);
+	float RvGamma = 1.f / gamma;
+	float Rv255 = 1.f / 255.f;
+	float LUT[256];
+
+	#pragma omp parallel for
+	for (int i = 0; i < 256; i++)
+	{
+		LUT[i] = pow((float)i * Rv255, RvGamma)*255.0f;
+	}
+	
+	#pragma omp parallel for
+	for (int y = 0; y < src.rows; y++)
+	{
+		for (int x = 0; x < src.cols*cn; x++)
+		{
+			dest.data[cn*(y*src.cols) + x] = LUT[src.data[cn*(y*src.cols) + x]];
+
+		}
+	}
+}
+
+///////////////////////
+// 平均・分散計算改良
+///////////////////////
+void MeanVarFast(const Image_8U& src, float& mean, float& var)
+{
+	mean = 0;
+	var = 0;
+	const int cn = src.channels;
+	__m256 msum1[8],mtmp1[8],msum2[8],mtmp2[8];
+
+	#pragma omp parallel for
+	for (int i = 0; i < 8; i++)
+	{
+		msum1[i] = _mm256_setzero_ps();
+		msum2[i] = _mm256_setzero_ps();
+	}
+
+	#pragma omp parallel for
+	for (int y = 0; y < src.rows; y++)
+	{
+		for (int x = 0; x < src.cols*cn; x += 8)
+		{	
+			mtmp1[x] = _mm256_load_ps((float*)(&src.data[cn*(y*src.cols) + x]));
+			msum1[x] = _mm256_add_ps(msum1[x],mtmp1[x]);
+			mtmp2[x] = _mm256_mul_ps(mtmp1[x],mtmp1[x]);
+			msum2[x] = _mm256_add_ps(mtmp1[x],msum2[x]);
+		}
+	}
+	msum1 = _mm256_hadd_ps(msum1,msum1);
+	msum1 = _mm256_hadd_ps(msum1,msum1);
+
+	mean =  (((float*)&msum1)[0]+((float*)&msum1)[4]) / (float)(src.rows*src.cols*cn);
+		
+	msum2 = _mm256_hadd_ps(msum2,msum2);
+	msum2 = _mm256_hadd_ps(msum2,msum2);
+	var = (((float*)&msum2)[0]+((float*)&msum2)[4]) / (float)(src.rows*src.cols*cn) - mean * mean;
+}
+
+///////////////////////
+// 平均・分散計算(double)
+///////////////////////
+void MeanVarDouble(const Image_8U& src, double& mean, double& var)
+{
+	mean = 0;
+	var = 0;
+	const int cn = src.channels;
 
 	for (int y = 0; y < src.rows; y++)
 	{
 		for (int x = 0; x < src.cols*cn; x++)
 		{
-			dest.data[cn*(y*src.cols) + x] = pow((float)src.data[cn*(y*src.cols) + x] * Rv255, RvGamma)*255.0f;
+			mean += src.data[cn*(y*src.cols) + x];
+			var += src.data[cn*(y*src.cols) + x] * src.data[cn*(y*src.cols) + x];
 		}
 	}
+	mean /= (double)(src.rows*src.cols*cn);
+	var = var / (double)(src.rows*src.cols*cn) - mean * mean;
 }
-
 int main(const int argc, const char** argv)
 {
 	///////////////////////
@@ -137,7 +203,7 @@ int main(const int argc, const char** argv)
 	///////////////////////
 	// gamma correction
 	///////////////////////
-	//if (false)
+	if (false)
 	{
 		const int loop = 10;
 
@@ -154,7 +220,8 @@ int main(const int argc, const char** argv)
 			t.end();
 		}
 		std::cout << "time (avg): " << t.getAvgTime() << " ms" << std::endl;
-		writePXM("gamma.ppm", dest);
+		//writePXM("img/gamma.ppm", dest);
+		writePXM("img/gamma_fast.ppm", dest);
 		return 0;
 	}
 
@@ -173,7 +240,8 @@ int main(const int argc, const char** argv)
 		for (int k = 0; k < loop; k++)
 		{
 			t.start();
-			MeanVar(src, mean, var);
+			//MeanVar(src, mean, var);
+			MeanVarFast(src, mean, var);
 			t.end();
 		}
 		std::cout << "time (avg): " << t.getAvgTime() << " ms" << std::endl;
@@ -181,6 +249,32 @@ int main(const int argc, const char** argv)
 		std::cout << "var : " << var << std::endl;
 		return 0;
 	}
+
+	///////////////////////
+	// mean-var(double)
+	///////////////////////
+	//if (false)
+	{
+		const int loop = 10;
+
+		Image_8U src;
+		readPXM("img/lena.ppm", src);
+
+		double mean;
+		double var;
+		CalcTime t;
+		for (int k = 0; k < loop; k++)
+		{
+			t.start();
+			MeanVarDouble(src, mean, var);
+			t.end();
+		}
+		std::cout << "time (avg): " << t.getAvgTime() << " ms" << std::endl;
+		std::cout << "mean: " << mean << std::endl;
+		std::cout << "var : " << var << std::endl;
+		return 0;
+	}
+
 
 	///////////////////////
 	// Gaussian filter
@@ -303,6 +397,7 @@ void MeanVar(const Image_8U& src, float& mean, float& var)
 	mean /= (float)(src.rows*src.cols*cn);
 	var = var / (float)(src.rows*src.cols*cn) - mean * mean;
 }
+
 
 ///////////////////////
 // ガウシアンフィルタ

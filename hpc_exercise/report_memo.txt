@@ -809,3 +809,114 @@ void GammaCorrectionFast(const Image_8U& src, Image_8U& dest, const float gamma)
 		}
 	}
 }
+
+スレッドの並列化
+void GammaCorrectionFast(const Image_8U& src, Image_8U& dest, const float gamma)
+{
+	dest = Image_8U(src.rows, src.cols, src.channels);
+	const int cn = src.channels;
+	float RvGamma = 1.f / gamma;
+	float Rv255 = 1.f / 255.f;
+	#pragma omp parallel for
+	for (int y = 0; y < src.rows; y++)
+	{
+		for (int x = 0; x < src.cols*cn; x++)
+		{
+			dest.data[cn*(y*src.cols) + x] = pow((float)src.data[cn*(y*src.cols) + x] * Rv255, RvGamma)*255.0f;
+		}
+	}
+}
+
+time (avg): 12.9542 ms
+
+ループ潰し
+void GammaCorrectionFast(const Image_8U& src, Image_8U& dest, const float gamma)
+{
+	dest = Image_8U(src.rows, src.cols, src.channels);
+	const int cn = src.channels;
+	float RvGamma = 1.f / gamma;
+	float Rv255 = 1.f / 255.f;
+	#pragma omp parallel for
+	for (int y = 0; y < src.rows; y++)
+	{
+		for (int x = 0; x < src.cols*cn; x += 8)
+		{
+			dest.data[cn*(y*src.cols) + x] = pow((float)src.data[cn*(y*src.cols) + x] * Rv255, RvGamma)*255.0f;
+			dest.data[cn*(y*src.cols) + x + 1] = pow((float)src.data[cn*(y*src.cols) + x + 1] * Rv255, RvGamma)*255.0f;
+			dest.data[cn*(y*src.cols) + x + 2] = pow((float)src.data[cn*(y*src.cols) + x + 2] * Rv255, RvGamma)*255.0f;
+			dest.data[cn*(y*src.cols) + x + 3] = pow((float)src.data[cn*(y*src.cols) + x + 3] * Rv255, RvGamma)*255.0f;
+			dest.data[cn*(y*src.cols) + x + 4] = pow((float)src.data[cn*(y*src.cols) + x + 4] * Rv255, RvGamma)*255.0f;
+			dest.data[cn*(y*src.cols) + x + 5] = pow((float)src.data[cn*(y*src.cols) + x + 5] * Rv255, RvGamma)*255.0f;
+			dest.data[cn*(y*src.cols) + x + 6] = pow((float)src.data[cn*(y*src.cols) + x + 6] * Rv255, RvGamma)*255.0f;
+			dest.data[cn*(y*src.cols) + x + 7] = pow((float)src.data[cn*(y*src.cols) + x + 7] * Rv255, RvGamma)*255.0f;
+
+		}
+	}
+}
+time (avg): 12.7548 ms
+
+LUT
+time (avg): 3.28291 ms
+
+LUT + 並列か
+time (avg): 1.22013 ms
+void GammaCorrectionFast(const Image_8U& src, Image_8U& dest, const float gamma)
+{
+	dest = Image_8U(src.rows, src.cols, src.channels);
+	const int cn = src.channels;
+	float RvGamma = 1.f / gamma;
+	float Rv255 = 1.f / 255.f;
+	float LUT[256];
+
+	#pragma omp parallel for
+	for (int i = 0; i < 256; i++)
+	{
+		LUT[i] = pow((float)i * Rv255, RvGamma)*255.0f;
+	}
+	
+	#pragma omp parallel for
+	for (int y = 0; y < src.rows; y++)
+	{
+		for (int x = 0; x < src.cols*cn; x++)
+		{
+			dest.data[cn*(y*src.cols) + x] = LUT[src.data[cn*(y*src.cols) + x]];
+
+		}
+	}
+}
+
+課題2
+
+doubleで行った計算の答え
+time (avg): 4.99934 ms
+mean: 128.228
+var : 3479.08
+
+修正前
+time (avg): 5.01186 ms
+mean: 128.238
+var : 3489.74
+
+修正１
+void MeanVarFast(const Image_8U& src, float& mean, float& var)
+{
+	mean = 0;
+	var = 0;
+	const int cn = src.channels;
+
+	#pragma omp parallel for
+	for (int y = 0; y < src.rows; y++)
+	{
+		for (int x = 0; x < src.cols*cn; x++)
+		{
+			mean += src.data[cn*(y*src.cols) + x];
+			var += src.data[cn*(y*src.cols) + x] * src.data[cn*(y*src.cols) + x];
+		}
+	}
+	mean /= (float)(src.rows*src.cols*cn);
+	var = var / (float)(src.rows*src.cols*cn) - mean * mean;
+}
+遅くなる。結果が間違っている
+time (avg): 16.1015 ms
+mean: 44.7694
+var : 3623.27
