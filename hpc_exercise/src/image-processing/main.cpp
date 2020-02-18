@@ -50,6 +50,7 @@ void GammaCorrectionFast(const Image_8U& src, Image_8U& dest, const float gamma)
 ///////////////////////
 // 平均・分散計算改良
 ///////////////////////
+/*
 void MeanVarFast(const Image_8U& src, float& mean, float& var)
 {
 	mean = 0;
@@ -64,7 +65,7 @@ void MeanVarFast(const Image_8U& src, float& mean, float& var)
 		msum2[i] = _mm256_setzero_ps();
 	}
 
-	#pragma omp parallel for
+	#pragma omp parallel for reduction(+: sum)
 	for (int y = 0; y < src.rows; y++)
 	{
 		for (int x = 0; x < src.cols*cn; x += 8)
@@ -84,7 +85,29 @@ void MeanVarFast(const Image_8U& src, float& mean, float& var)
 	msum2 = _mm256_hadd_ps(msum2,msum2);
 	var = (((float*)&msum2)[0]+((float*)&msum2)[4]) / (float)(src.rows*src.cols*cn) - mean * mean;
 }
+*/
 
+///////////////////////
+// 平均・分散計算
+///////////////////////
+void MeanVarFast(const Image_8U& src, float& mean, float& var)
+{
+	mean = 0;
+	var = 0;
+
+	float m = 0;
+	float v = 0;
+	const int cn = src.channels;
+	int length = cn*(src.rows*src.cols) + src.cols*cn;
+	#pragma omp parallel for reduction(+: m,v)
+	for (int i = 0; i < length; i++)
+	{	
+		m += src.data[i];
+		v += src.data[i] * src.data[i];
+	}
+	mean = m / (float)(src.rows*src.cols*cn);
+	var = v / (float)(src.rows*src.cols*cn) - mean * mean;
+}
 ///////////////////////
 // 平均・分散計算(double)
 ///////////////////////
@@ -105,6 +128,93 @@ void MeanVarDouble(const Image_8U& src, double& mean, double& var)
 	mean /= (double)(src.rows*src.cols*cn);
 	var = var / (double)(src.rows*src.cols*cn) - mean * mean;
 }
+
+///////////////////////
+// バイラテラルフィルタ（カラー画像のみ対応）
+///////////////////////
+void BilateralFilterFast(const Image_8U& src, Image_8U& dest, const int r, const float sigma_r, const float sigma_s)
+{	
+	Image_8U temp_8u;
+	copyMakeBorder(src, temp_8u, r, r, r, r);
+	Image_32F temp_32f(temp_8u);
+
+	Image_32F dest_32f(src.rows, src.cols, src.channels);
+	if (src.channels == 3)
+	{
+		Image_32F splitImg[3];
+		split(temp_32f, splitImg);
+		//for (int x = 0; x < src.cols; x++)
+		for (int y = 0; y < src.rows; y++)
+		{
+			//for (int y = 0; y < src.rows; y++)
+			for (int x = 0; x < src.cols; x++)
+			{
+				float sum[3] = { 0 };
+				float wsum = 0;
+				const float tgt_r = splitImg[0].data[(y + r)*splitImg[0].cols + (x + r)];
+				const float tgt_g = splitImg[1].data[(y + r)*splitImg[1].cols + (x + r)];
+				const float tgt_b = splitImg[2].data[(y + r)*splitImg[2].cols + (x + r)];
+				for (int j = -r; j <= r; j++)
+				{
+					for (int i = -r; i <= r; i++)
+					{
+						if(i != 0 || j != 0){
+							const int space_distance = i * i + j * j;
+							//const float ws = exp(-space_distance / (2.f*sigma_s*sigma_s));
+							const float ws = exp(-space_distance / 2.f);
+							
+							const float ref_r = splitImg[0].data[(y + r + j)*splitImg[0].cols + (x + r + i)];
+							const float ref_g = splitImg[1].data[(y + r + j)*splitImg[1].cols + (x + r + i)];
+							const float ref_b = splitImg[2].data[(y + r + j)*splitImg[2].cols + (x + r + i)];
+							const float range_distance = (ref_r - tgt_r)*(ref_r - tgt_r) + (ref_g - tgt_g)*(ref_g - tgt_g) + (ref_b - tgt_b)*(ref_b - tgt_b);
+							//const float wr = exp(-range_distance / (2.f*sigma_r*sigma_r));
+							const float w = exp(-range_distance / 512.f) * ws;
+							//const float w = ws * wr;
+
+							
+							//for (int c = 0; c < 3; c++)
+							//{
+							//	sum[c] += splitImg[c].data[(y + r + j)*splitImg[c].cols + (x + r + i)] * w;
+							//}
+							
+							sum[0] += splitImg[0].data[(y + r + j)*splitImg[0].cols + (x + r + i)] * w;
+							sum[1] += splitImg[1].data[(y + r + j)*splitImg[1].cols + (x + r + i)] * w;
+							sum[2] += splitImg[2].data[(y + r + j)*splitImg[2].cols + (x + r + i)] * w;
+							wsum += w;
+						}
+						else
+						{
+							sum[0] += tgt_r;
+							sum[1] += tgt_g;
+							sum[2] += tgt_b;
+							wsum++;	
+						}
+						
+					}
+					
+				}
+				/*
+				for (int c = 0; c < 3; c++)
+				{
+					dest_32f.data[3 * (y*dest_32f.cols + x) + c] = sum[c] / wsum + 0.5f;
+				}
+				*/
+				dest_32f.data[3 * (y*dest_32f.cols + x)] = sum[0] / wsum + 0.5f;
+				dest_32f.data[3 * (y*dest_32f.cols + x) + 1] = sum[1] / wsum + 0.5f;
+				dest_32f.data[3 * (y*dest_32f.cols + x) + 2] = sum[2] / wsum + 0.5f;
+			}
+		}
+	}
+	else if (src.channels == 1)
+	{
+		//gray image
+		std::cout << "not support gray image" << std::endl;
+		return;
+	}
+	dest = Image_8U(dest_32f);
+}
+
+
 int main(const int argc, const char** argv)
 {
 	///////////////////////
@@ -180,16 +290,6 @@ int main(const int argc, const char** argv)
 			for (int j = 0; j < img.rows; j++)
 			{
 				int green = img.data[img.channels*(i*img.cols + j)+1];
-				/*
-				if(green < 128)
-				{
-					img.data[img.channels*(i*img.cols + j)+1] = green * 2;
-				}
-				else
-				{
-					img.data[img.channels*(i*img.cols + j)+1] = 255;
-				}
-				*/
 				img.data[img.channels*(i*img.cols + j)+1] = std::min(std::max(2*green,0),255);
 			}
 		}
@@ -253,7 +353,7 @@ int main(const int argc, const char** argv)
 	///////////////////////
 	// mean-var(double)
 	///////////////////////
-	//if (false)
+	if (false)
 	{
 		const int loop = 10;
 
@@ -308,12 +408,12 @@ int main(const int argc, const char** argv)
 	///////////////////////
 	// bilateral filter
 	///////////////////////
-	if (false)
+	//if (false)
 	{
 		const int loop = 10;
 
 		const float sigma_s = 1.f;
-		const int r = 3 * sigma_s;
+		const int r = 3;
 		const float sigma_r = 16.0f;
 		Image_8U src, dest;
 		readPXM("img/lena.ppm", src);
@@ -322,12 +422,13 @@ int main(const int argc, const char** argv)
 		for (int k = 0; k < loop; k++)
 		{
 			t.start();
-			BilateralFilter(src, dest, r, sigma_r, sigma_s);
+			//BilateralFilter(src, dest, r, sigma_r, sigma_s);
+			BilateralFilterFast(src, dest, r, sigma_r, sigma_s);
 			t.end();
 		}
 		std::cout << "time (avg): " << t.getAvgTime() << " ms" << std::endl;
 		std::cout << "PSNR : " << calcPSNR(src, dest) << " dB" << std::endl; //高速化した関数のとサンプルコードの出力の精度を確認すること（現状は，入力画像を入れている．）
-		writePXM("bf.ppm", dest);
+		writePXM("img/bf.ppm", dest);
 		return 0;
 	}
 	///////////////////////

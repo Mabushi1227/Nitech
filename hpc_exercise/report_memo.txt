@@ -920,3 +920,67 @@ void MeanVarFast(const Image_8U& src, float& mean, float& var)
 time (avg): 16.1015 ms
 mean: 44.7694
 var : 3623.27
+
+ループ潰し
+void MeanVarFast(const Image_8U& src, float& mean, float& var)
+{
+	mean = 0;
+	var = 0;
+	const int cn = src.channels;
+	int length = cn*(src.rows*src.cols) + src.cols*cn;
+	for (int i = 0; i < length; i++)
+	{	
+		mean += src.data[i];
+		var += src.data[i] * src.data[i];
+	}
+	mean /= (float)(src.rows*src.cols*cn);
+	var = var / (float)(src.rows*src.cols*cn) - mean * mean;
+}
+time (avg): 3.44503 ms
+mean: 128.238
+var : 3489.74
+
+並列+reduction
+time (avg): 28.6967 ms
+mean: 128.228
+var : 3478.77
+void MeanVarFast(const Image_8U& src, float& mean, float& var)
+{
+	mean = 0;
+	var = 0;
+
+	float m = 0;
+	float v = 0;
+	const int cn = src.channels;
+	int length = cn*(src.rows*src.cols) + src.cols*cn;
+	#pragma omp parallel for reduction(+: m,v)
+	for (int i = 0; i < length; i++)
+	{	
+		m += src.data[i];
+		v += src.data[i] * src.data[i];
+	}
+	mean = m / (float)(src.rows*src.cols*cn);
+	var = v / (float)(src.rows*src.cols*cn) - mean * mean;
+}
+
+バイラテラルフィルタ
+修正前
+time (avg): 921.662 ms
+PSNR : 39.1587 dB
+
+ループxyの順序入れ替え
+time (avg): 872.469 ms
+PSNR : 39.1587 dB
+
+for文の展開
+time (avg): 868.49 ms
+PSNR : 39.1587 dB
+
+wの省略
+time (avg): 814.343 ms
+PSNR : 39.1587 dB
+
+i,j = 0の条件分岐
+time (avg): 774.36 ms
+PSNR : 39.1587 dB
+
