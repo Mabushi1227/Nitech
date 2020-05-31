@@ -48,46 +48,6 @@ void GammaCorrectionFast(const Image_8U& src, Image_8U& dest, const float gamma)
 }
 
 ///////////////////////
-// 平均・分散計算改良
-///////////////////////
-/*
-void MeanVarFast(const Image_8U& src, float& mean, float& var)
-{
-	mean = 0;
-	var = 0;
-	const int cn = src.channels;
-	__m256 msum1[8],mtmp1[8],msum2[8],mtmp2[8];
-
-	#pragma omp parallel for
-	for (int i = 0; i < 8; i++)
-	{
-		msum1[i] = _mm256_setzero_ps();
-		msum2[i] = _mm256_setzero_ps();
-	}
-
-	#pragma omp parallel for reduction(+: sum)
-	for (int y = 0; y < src.rows; y++)
-	{
-		for (int x = 0; x < src.cols*cn; x += 8)
-		{	
-			mtmp1[x] = _mm256_load_ps((float*)(&src.data[cn*(y*src.cols) + x]));
-			msum1[x] = _mm256_add_ps(msum1[x],mtmp1[x]);
-			mtmp2[x] = _mm256_mul_ps(mtmp1[x],mtmp1[x]);
-			msum2[x] = _mm256_add_ps(mtmp1[x],msum2[x]);
-		}
-	}
-	msum1 = _mm256_hadd_ps(msum1,msum1);
-	msum1 = _mm256_hadd_ps(msum1,msum1);
-
-	mean =  (((float*)&msum1)[0]+((float*)&msum1)[4]) / (float)(src.rows*src.cols*cn);
-		
-	msum2 = _mm256_hadd_ps(msum2,msum2);
-	msum2 = _mm256_hadd_ps(msum2,msum2);
-	var = (((float*)&msum2)[0]+((float*)&msum2)[4]) / (float)(src.rows*src.cols*cn) - mean * mean;
-}
-*/
-
-///////////////////////
 // 平均・分散計算
 ///////////////////////
 void MeanVarFast(const Image_8U& src, float& mean, float& var)
