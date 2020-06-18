@@ -54,11 +54,11 @@ def drawTDistribution(df_list):
 
     # 標準正規分布の確率を描画
     p = stats.norm.pdf(t, loc=0, scale=1)
-    label = "normal"
-    plt.plot(t, p,label=label,color='black',  linestyle='dashed')
+    #label = "normal"
+    #plt.plot(t, p,label=label,color='black',  linestyle='dashed')
     
     #追加プログラム
-    t0,t1 = stats.t.interval(0.95,9)
+    t0,t1 = stats.t.interval(0.95,50)
     plt.plot([t0, t0], [0, 0.45], 'r-')
     plt.plot([t1, t1], [0, 0.45], 'r-')
     #
@@ -74,9 +74,9 @@ def drawTDistribution(df_list):
 if __name__ == "__main__":
     print("lecture 5")
         
-    drawTDistribution([2,5,10,50,100,1000])
+    #drawTDistribution([2,10,50])
     
-    drawTDistribution([9])
+    drawTDistribution([50])
     t0,t1 = stats.t.interval(0.95,9)
     print("t(9,0.05) = ",t1)
     
@@ -87,7 +87,8 @@ if __name__ == "__main__":
     
     print("t = ",t)
     
-    p = stats.t.cdf (t,9)
+    p = stats.t.pdf (t,9)
+    print("p:" ,p)
     print("範囲外の範囲",1-p)
     
     u0 = m + t0 * (pow(np.var(data,ddof = 1)/data.shape[0],0.5))

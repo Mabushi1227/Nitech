@@ -9,6 +9,7 @@ int main(void)
     scanf("%u", &max);
 
     int i = 0;
+
 loop:
     i++;
     if(i > max) goto end;
@@ -20,6 +21,7 @@ loop:
     if(i % 5 != 0) goto O3X5;
     printf("Fizz Buzz\n");
     goto loop;
+    
 X3:
     if(i % 5 != 0) goto X3X5;
     printf("Buzz\n");
